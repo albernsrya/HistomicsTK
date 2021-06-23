@@ -1,15 +1,19 @@
 import numpy as np
 import pandas as pd
 from skimage.measure import regionprops
-from .graycomatrixext import graycomatrixext
-from .graycomatrixext import _default_num_levels
-from .graycomatrixext import _default_offsets
 
-from ._compute_marginal_glcm_probs_cython import _compute_marginal_glcm_probs_cython
+from ._compute_marginal_glcm_probs_cython import \
+    _compute_marginal_glcm_probs_cython
+from .graycomatrixext import (_default_num_levels, _default_offsets,
+                              graycomatrixext)
 
 
-def compute_haralick_features(im_label, im_intensity, offsets=None,
-                              num_levels=None, gray_limits=None, rprops=None):
+def compute_haralick_features(im_label,
+                              im_intensity,
+                              offsets=None,
+                              num_levels=None,
+                              gray_limits=None,
+                              rprops=None):
     r"""
     Calculates 26 Haralick texture features for each object in the given label
     mask.
@@ -216,25 +220,25 @@ def compute_haralick_features(im_label, im_intensity, offsets=None,
 
     # List of feature names
     feature_list = [
-        'Haralick.ASM',
-        'Haralick.Contrast',
-        'Haralick.Correlation',
-        'Haralick.SumOfSquares',
-        'Haralick.IDM',
-        'Haralick.SumAverage',
-        'Haralick.SumVariance',
-        'Haralick.SumEntropy',
-        'Haralick.Entropy',
-        'Haralick.DifferenceVariance',
-        'Haralick.DifferenceEntropy',
-        'Haralick.IMC1',
-        'Haralick.IMC2',
+        "Haralick.ASM",
+        "Haralick.Contrast",
+        "Haralick.Correlation",
+        "Haralick.SumOfSquares",
+        "Haralick.IDM",
+        "Haralick.SumAverage",
+        "Haralick.SumVariance",
+        "Haralick.SumEntropy",
+        "Haralick.Entropy",
+        "Haralick.DifferenceVariance",
+        "Haralick.DifferenceEntropy",
+        "Haralick.IMC1",
+        "Haralick.IMC2",
     ]
 
     agg_feature_list = []
     for fname in feature_list:
-        agg_feature_list.append(fname + '.Mean')
-        agg_feature_list.append(fname + '.Range')
+        agg_feature_list.append(fname + ".Mean")
+        agg_feature_list.append(fname + ".Range")
 
     # num_levels
     if num_levels is None:
@@ -257,8 +261,7 @@ def compute_haralick_features(im_label, im_intensity, offsets=None,
         # check sanity
         if offsets.shape[1] != num_dims:
             raise ValueError(
-                'Dimension mismatch between input image and offsets'
-            )
+                "Dimension mismatch between input image and offsets")
 
     num_offsets = offsets.shape[0]
 
@@ -276,7 +279,7 @@ def compute_haralick_features(im_label, im_intensity, offsets=None,
 
     x, y = np.mgrid[0:num_levels, 0:num_levels]
     xy = x * y
-    xy_IDM = 1. / (1 + np.square(x - y))
+    xy_IDM = 1.0 / (1 + np.square(x - y))
 
     e = 0.00001  # small positive constant to avoid log 0
 
@@ -286,13 +289,17 @@ def compute_haralick_features(im_label, im_intensity, offsets=None,
         minr, minc, maxr, maxc = rprops[i].bbox
 
         # grab nucleus mask
-        subImage = im_intensity[minr:maxr+1, minc:maxc+1].astype(np.uint8)
+        subImage = im_intensity[minr:maxr + 1, minc:maxc + 1].astype(np.uint8)
 
         # gets GLCM or gray-tone spatial dependence matrix
-        arrayGLCM = graycomatrixext(subImage, offsets=offsets,
-                                    num_levels=num_levels,
-                                    gray_limits=gray_limits,
-                                    symmetric=True, normed=True)
+        arrayGLCM = graycomatrixext(
+            subImage,
+            offsets=offsets,
+            num_levels=num_levels,
+            gray_limits=gray_limits,
+            symmetric=True,
+            normed=True,
+        )
 
         # Compute haralick features for each offset
         ldata = pd.DataFrame(np.zeros((num_offsets, len(feature_list))),
@@ -307,66 +314,65 @@ def compute_haralick_features(im_label, im_intensity, offsets=None,
                 nGLCM)
 
             # computes angular second moment
-            ldata.at[r, 'Haralick.ASM'] = np.sum(np.square(nGLCM))
+            ldata.at[r, "Haralick.ASM"] = np.sum(np.square(nGLCM))
 
             # computes contrast
-            ldata.at[r, 'Haralick.Contrast'] = \
-                np.dot(np.square(n_Minus), pxMinusy)
+            ldata.at[r, "Haralick.Contrast"] = np.dot(np.square(n_Minus),
+                                                      pxMinusy)
 
             # computes correlation
             # gets weighted mean and standard deviation of px and py
             meanx = np.dot(n_Minus, px)
             variance = np.dot(px, np.square(n_Minus)) - np.square(meanx)
             nGLCMr = np.ravel(nGLCM)
-            ldata.at[r, 'Haralick.Correlation'] = \
-                (np.dot(np.ravel(xy), nGLCMr) - np.square(meanx)) / variance
+            ldata.at[r,
+                     "Haralick.Correlation"] = (np.dot(np.ravel(xy), nGLCMr) -
+                                                np.square(meanx)) / variance
 
             # computes sum of squares : variance
-            ldata.at[r, 'Haralick.SumOfSquares'] = variance
+            ldata.at[r, "Haralick.SumOfSquares"] = variance
 
             # computes inverse difference moment
-            ldata.at[r, 'Haralick.IDM'] = \
-                np.dot(np.ravel(xy_IDM), nGLCMr)
+            ldata.at[r, "Haralick.IDM"] = np.dot(np.ravel(xy_IDM), nGLCMr)
 
             # computes sum average
-            ldata.at[r, 'Haralick.SumAverage'] = \
-                np.dot(n_Plus, pxPlusy)
+            ldata.at[r, "Haralick.SumAverage"] = np.dot(n_Plus, pxPlusy)
 
             # computes sum variance
             # [1] uses sum entropy, but we use sum average
-            ldata.at[r, 'Haralick.SumVariance'] = \
-                np.dot(np.square(n_Plus), pxPlusy) - \
-                np.square(ldata.at[r, 'Haralick.SumAverage'])
+            ldata.at[r, "Haralick.SumVariance"] = np.dot(
+                np.square(n_Plus), pxPlusy) - np.square(
+                    ldata.at[r, "Haralick.SumAverage"])
 
             # computes sum entropy
-            ldata.at[r, 'Haralick.SumEntropy'] = \
-                -np.dot(pxPlusy, np.log2(pxPlusy+e))
+            ldata.at[r, "Haralick.SumEntropy"] = -np.dot(
+                pxPlusy, np.log2(pxPlusy + e))
 
             # computes entropy
-            ldata.at[r, 'Haralick.Entropy'] = \
-                -np.dot(nGLCMr, np.log2(nGLCMr+e))
+            ldata.at[r,
+                     "Haralick.Entropy"] = -np.dot(nGLCMr, np.log2(nGLCMr + e))
 
             # computes variance px-y
-            ldata.at[r, 'Haralick.DifferenceVariance'] = np.var(pxMinusy)
+            ldata.at[r, "Haralick.DifferenceVariance"] = np.var(pxMinusy)
 
             # computes difference entropy px-y
-            ldata.at[r, 'Haralick.DifferenceEntropy'] = \
-                -np.dot(pxMinusy, np.log2(pxMinusy+e))
+            ldata.at[r, "Haralick.DifferenceEntropy"] = -np.dot(
+                pxMinusy, np.log2(pxMinusy + e))
 
             # computes information measures of correlation
             # gets entropies of px and py
-            HX = -np.dot(px, np.log2(px+e))
-            HY = -np.dot(py, np.log2(py+e))
-            HXY = ldata.at[r, 'Haralick.Entropy']
+            HX = -np.dot(px, np.log2(px + e))
+            HY = -np.dot(py, np.log2(py + e))
+            HXY = ldata.at[r, "Haralick.Entropy"]
             pxy_ij = np.outer(px, py)
             pxy_ijr = np.ravel(pxy_ij)
-            HXY1 = -np.dot(nGLCMr, np.log2(pxy_ijr+e))
-            HXY2 = -np.dot(pxy_ijr, np.log2(pxy_ijr+e))
-            ldata.at[r, 'Haralick.IMC1'] = (HXY-HXY1)/max(HX, HY)
+            HXY1 = -np.dot(nGLCMr, np.log2(pxy_ijr + e))
+            HXY2 = -np.dot(pxy_ijr, np.log2(pxy_ijr + e))
+            ldata.at[r, "Haralick.IMC1"] = (HXY - HXY1) / max(HX, HY)
 
             # computes information measures of correlation
-            ldata.at[r, 'Haralick.IMC2'] = \
-                np.sqrt(1 - np.exp(-2.0*(HXY2-HXY)))
+            ldata.at[r, "Haralick.IMC2"] = np.sqrt(1 - np.exp(-2.0 *
+                                                              (HXY2 - HXY)))
 
         fdata.values[i, ::2] = np.mean(ldata.values, axis=0)
         fdata.values[i, 1::2] = np.ptp(ldata.values, axis=0)

@@ -1,29 +1,30 @@
 import os
 
-from histomicstk.cli.utils import CLIArgumentParser
 import large_image
 import numpy as np
 import skimage.io
 
 import histomicstk.segmentation.positive_pixel_count as ppc
-
 from histomicstk.cli import utils
+from histomicstk.cli.utils import CLIArgumentParser
 
 
 def main(args):
     utils.create_dask_client(args)
     ts = large_image.getTileSource(args.inputImageFile)
-    make_label_image = getattr(args, 'outputLabelImage', None) is not None
+    make_label_image = getattr(args, "outputLabelImage", None) is not None
     region = utils.get_region_dict(
         args.region,
-        *(args.maxRegionSize, ts) if make_label_image else ()
-    ).get('region')
+        *(args.maxRegionSize, ts) if make_label_image else ()).get("region")
     ppc_params = ppc.Parameters(
-        **{k: getattr(args, k) for k in ppc.Parameters._fields}
-    )
+        **{k: getattr(args, k)
+           for k in ppc.Parameters._fields})
     results = ppc.count_slide(
-        args.inputImageFile, ppc_params, region,
-        args.tile_grouping, make_label_image,
+        args.inputImageFile,
+        ppc_params,
+        region,
+        args.tile_grouping,
+        make_label_image,
     )
     if make_label_image:
         stats, label_image = results
@@ -39,15 +40,15 @@ def main(args):
             skimage.io.imsave(args.outputLabelImage, label_image)
         except ValueError:
             # This is likely caused by an unknown extension, so try again
-            altname = args.outputLabelImage + '.png'
+            altname = args.outputLabelImage + ".png"
             skimage.io.imsave(altname, label_image)
             os.rename(altname, args.outputLabelImage)
     else:
-        stats, = results
-    with open(args.returnParameterFile, 'w') as f:
+        (stats, ) = results
+    with open(args.returnParameterFile, "w") as f:
         for k, v in zip(stats._fields, stats):
-            f.write(f'{k} = {v}\n')
+            f.write(f"{k} = {v}\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(CLIArgumentParser().parse_args())

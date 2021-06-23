@@ -6,12 +6,13 @@ def get_principal_components(m):
     "principal components".  (Actually computed with SVD)
 
     """
-    return numpy.linalg.svd(m.astype(float), full_matrices=False)[0].astype(m.dtype)
+    return numpy.linalg.svd(m.astype(float),
+                            full_matrices=False)[0].astype(m.dtype)
 
 
 def magnitude(m):
     """Get the magnitude of each column vector in a matrix"""
-    return numpy.sqrt((m ** 2).sum(0))
+    return numpy.sqrt((m**2).sum(0))
 
 
 def normalize(m):

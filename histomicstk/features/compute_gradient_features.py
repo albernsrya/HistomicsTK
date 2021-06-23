@@ -5,8 +5,10 @@ from skimage.feature import canny
 from skimage.measure import regionprops
 
 
-def compute_gradient_features(im_label, im_intensity,
-                              num_hist_bins=10, rprops=None):
+def compute_gradient_features(im_label,
+                              im_intensity,
+                              num_hist_bins=10,
+                              rprops=None):
     """Calculates gradient features from an intensity image.
 
     Parameters
@@ -68,14 +70,14 @@ def compute_gradient_features(im_label, im_intensity,
 
     # List of feature names
     feature_list = [
-        'Gradient.Mag.Mean',
-        'Gradient.Mag.Std',
-        'Gradient.Mag.Skewness',
-        'Gradient.Mag.Kurtosis',
-        'Gradient.Mag.HistEntropy',
-        'Gradient.Mag.HistEnergy',
-        'Gradient.Canny.Sum',
-        'Gradient.Canny.Mean',
+        "Gradient.Mag.Mean",
+        "Gradient.Mag.Std",
+        "Gradient.Mag.Skewness",
+        "Gradient.Mag.Kurtosis",
+        "Gradient.Mag.HistEntropy",
+        "Gradient.Mag.HistEnergy",
+        "Gradient.Canny.Sum",
+        "Gradient.Canny.Mean",
     ]
 
     # compute object properties if not provided
@@ -95,38 +97,37 @@ def compute_gradient_features(im_label, im_intensity,
     for i in range(numLabels):
 
         # get gradients of object pixels
-        pixelGradients = np.sort(
-            diffG[rprops[i].coords[:, 0], rprops[i].coords[:, 1]]
-        )
+        pixelGradients = np.sort(diffG[rprops[i].coords[:, 0],
+                                       rprops[i].coords[:, 1]])
 
         # compute mean
-        fdata.at[i, 'Gradient.Mag.Mean'] = np.mean(pixelGradients)
+        fdata.at[i, "Gradient.Mag.Mean"] = np.mean(pixelGradients)
 
         # compute standard deviation
-        fdata.at[i, 'Gradient.Mag.Std'] = np.std(pixelGradients)
+        fdata.at[i, "Gradient.Mag.Std"] = np.std(pixelGradients)
 
         # compute skewness
-        fdata.at[i, 'Gradient.Mag.Skewness'] = scipy.stats.skew(pixelGradients)
+        fdata.at[i, "Gradient.Mag.Skewness"] = scipy.stats.skew(pixelGradients)
 
         # compute kurtosis
-        fdata.at[i, 'Gradient.Mag.Kurtosis'] = \
-            scipy.stats.kurtosis(pixelGradients)
+        fdata.at[i, "Gradient.Mag.Kurtosis"] = scipy.stats.kurtosis(
+            pixelGradients)
 
         # compute intensity histogram
         hist, bins = np.histogram(pixelGradients, bins=num_hist_bins)
-        prob = hist/np.sum(hist, dtype=np.float32)
+        prob = hist / np.sum(hist, dtype=np.float32)
 
         # compute entropy
-        fdata.at[i, 'Gradient.Mag.HistEntropy'] = scipy.stats.entropy(prob)
+        fdata.at[i, "Gradient.Mag.HistEntropy"] = scipy.stats.entropy(prob)
 
         # compute energy
-        fdata.at[i, 'Gradient.Mag.HistEnergy'] = np.sum(prob**2)
+        fdata.at[i, "Gradient.Mag.HistEnergy"] = np.sum(prob**2)
 
         bw_canny = cannyG[rprops[i].coords[:, 0], rprops[i].coords[:, 1]]
-        canny_sum = np.sum(bw_canny).astype('float')
+        canny_sum = np.sum(bw_canny).astype("float")
 
-        fdata.at[i, 'Gradient.Canny.Sum'] = canny_sum
+        fdata.at[i, "Gradient.Canny.Sum"] = canny_sum
 
-        fdata.at[i, 'Gradient.Canny.Mean'] = canny_sum / len(pixelGradients)
+        fdata.at[i, "Gradient.Canny.Mean"] = canny_sum / len(pixelGradients)
 
     return fdata

@@ -1,5 +1,6 @@
-from histomicstk.utils import sample_pixels
 import numpy
+
+from histomicstk.utils import sample_pixels
 
 
 def background_intensity(*args, **kwargs):
@@ -14,13 +15,13 @@ def background_intensity(*args, **kwargs):
     native scan magnification as in sample_pixels.
 
     """
-    if 'background' in kwargs:
+    if "background" in kwargs:
         raise ValueError('"background" argument may not be specified')
 
-    kwargs['background'] = True
+    kwargs["background"] = True
 
-    if 'magnification' not in kwargs:
-        kwargs['magnification'] = 1.25
+    if "magnification" not in kwargs:
+        kwargs["magnification"] = 1.25
 
     sample = sample_pixels(*args, **kwargs)
 

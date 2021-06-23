@@ -12,10 +12,9 @@ from .vesselness import vesselness
 
 # list out things that are available for public use
 __all__ = (
-
     # functions and classes of this package
-    'cdog',
-    'clog',
-    'glog',
-    'vesselness',
+    "cdog",
+    "clog",
+    "glog",
+    "vesselness",
 )

@@ -5,19 +5,26 @@ Created on Fri Oct 18 02:31:32 2019.
 @author: mtageld
 """
 import numpy as np
-from histomicstk.preprocessing.color_deconvolution.stain_color_map import (
-    stain_color_map)
+
+from histomicstk.preprocessing.color_deconvolution import \
+    complement_stain_matrix
+from histomicstk.preprocessing.color_deconvolution.color_convolution import \
+    color_convolution
 from histomicstk.preprocessing.color_deconvolution.color_deconvolution import (
-    stain_unmixing_routine, color_deconvolution_routine)
-from histomicstk.preprocessing.color_deconvolution.color_convolution import (
-    color_convolution)
-from histomicstk.preprocessing.color_deconvolution import (
-    complement_stain_matrix)
+    color_deconvolution_routine, stain_unmixing_routine)
+from histomicstk.preprocessing.color_deconvolution.stain_color_map import \
+    stain_color_map
 
 
 def deconvolution_based_normalization(
-        im_src, W_source=None, W_target=None, im_target=None,
-        stains=None, mask_out=None, stain_unmixing_routine_params=None):
+    im_src,
+    W_source=None,
+    W_target=None,
+    im_target=None,
+    stains=None,
+    mask_out=None,
+    stain_unmixing_routine_params=None,
+):
     """Perform color normalization using color deconvolution to transform the.
 
     ... color characteristics of an image to a desired standard.
@@ -92,18 +99,20 @@ def deconvolution_based_normalization(
            analysis.  Computerized Medical Imaging and Graphics, 46, 20-29.
 
     """
-    stains = ['hematoxylin', 'eosin'] if stains is None else stains
-    stain_unmixing_routine_params = (
-        {} if stain_unmixing_routine_params is None else
-        stain_unmixing_routine_params)
-    for k in ['W_source', 'mask_out']:
-        assert k not in stain_unmixing_routine_params.keys(), \
-            "%s must be provided as a separate parameter." % k
+    stains = ["hematoxylin", "eosin"] if stains is None else stains
+    stain_unmixing_routine_params = ({}
+                                     if stain_unmixing_routine_params is None
+                                     else stain_unmixing_routine_params)
+    for k in ["W_source", "mask_out"]:
+        assert k not in stain_unmixing_routine_params.keys(), (
+            "%s must be provided as a separate parameter." % k)
 
     # find stains matrix from source image
-    stain_unmixing_routine_params['stains'] = stains
+    stain_unmixing_routine_params["stains"] = stains
     _, StainsFloat, _ = color_deconvolution_routine(
-        im_src, W_source=W_source, mask_out=mask_out,
+        im_src,
+        W_source=W_source,
+        mask_out=mask_out,
         **stain_unmixing_routine_params)
 
     # Get W_target
@@ -116,8 +125,8 @@ def deconvolution_based_normalization(
 
     elif im_target is not None:
         # Get W_target from target image
-        W_target = stain_unmixing_routine(
-            im_target, **stain_unmixing_routine_params)
+        W_target = stain_unmixing_routine(im_target,
+                                          **stain_unmixing_routine_params)
 
     # Convolve source image StainsFloat with W_target
     im_src_normalized = color_convolution(StainsFloat, W_target)

@@ -17,39 +17,42 @@
 ###############################################################################
 
 import collections
-import numpy as np
 import os
-from histomicstk.preprocessing import color_normalization as htk_cn
+
+import numpy as np
+
 from histomicstk.cli import utils as cli_utils
+from histomicstk.preprocessing import color_normalization as htk_cn
 
 from .datastore import datastore
 
 
 class TestReinhardNormalization:
-
     def test_reinhard_stats(self):
 
-        wsi_path = os.path.join(datastore.fetch(
-            'sample_svs_image.TCGA-DU-6399-01A-01-TS1.e8eb65de-d63e-42db-af6f-14fefbbdf7bd.svs'  # noqa
-        ))
+        wsi_path = os.path.join(
+            datastore.fetch(
+                "sample_svs_image.TCGA-DU-6399-01A-01-TS1.e8eb65de-d63e-42db-af6f-14fefbbdf7bd.svs"  # noqa
+            ))
 
         np.random.seed(1)
 
         # create dask client
         args = {
             # In Python 3 unittesting, the scheduler fails if it uses processes
-            'scheduler': 'multithreading',  # None,
-            'num_workers': -1,
-            'num_threads_per_worker': 1,
+            "scheduler": "multithreading",  # None,
+            "num_workers": -1,
+            "num_threads_per_worker": 1,
         }
 
-        args = collections.namedtuple('Parameters', args.keys())(**args)
+        args = collections.namedtuple("Parameters", args.keys())(**args)
 
         cli_utils.create_dask_client(args)
 
         # compute reinhard stats
-        wsi_mean, wsi_stddev = htk_cn.reinhard_stats(
-            wsi_path, 0.1, magnification=20)
+        wsi_mean, wsi_stddev = htk_cn.reinhard_stats(wsi_path,
+                                                     0.1,
+                                                     magnification=20)
 
         gt_mean = [8.896134, -0.074579, 0.022006]
         gt_stddev = [0.612143, 0.122667, 0.021361]
@@ -59,23 +62,23 @@ class TestReinhardNormalization:
 
 
 class TestBackgroundIntensity:
-
     def test_background_intensity(self):
-        wsi_path = os.path.join(datastore.fetch(
-            'sample_svs_image.TCGA-DU-6399-01A-01-TS1.e8eb65de-d63e-42db-af6f-14fefbbdf7bd.svs'
-        ))
+        wsi_path = os.path.join(
+            datastore.fetch(
+                "sample_svs_image.TCGA-DU-6399-01A-01-TS1.e8eb65de-d63e-42db-af6f-14fefbbdf7bd.svs"
+            ))
 
         np.random.seed(1)
 
         # create dask client
         args = {
             # In Python 3 unittesting, the scheduler fails if it uses processes
-            'scheduler': 'multithreading',  # None,
-            'num_workers': -1,
-            'num_threads_per_worker': 1,
+            "scheduler": "multithreading",  # None,
+            "num_workers": -1,
+            "num_threads_per_worker": 1,
         }
 
-        args = collections.namedtuple('Parameters', args.keys())(**args)
+        args = collections.namedtuple("Parameters", args.keys())(**args)
 
         cli_utils.create_dask_client(args)
 

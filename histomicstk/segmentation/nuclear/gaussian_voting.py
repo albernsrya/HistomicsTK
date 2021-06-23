@@ -1,7 +1,8 @@
 import collections
+
 import numpy as np
-import sklearn.cluster as cl
 import scipy.signal as signal
+import sklearn.cluster as cl
 
 import histomicstk as htk
 
@@ -85,33 +86,35 @@ def gaussian_voting(I, rmax=35, rmin=10, sSigma=5, Tau=5, bw=15, Psi=0.3):
                     dMag[Voting[0][i]][Voting[1][i]])
 
         # enter weighted votes at these locations
-        Votes[r+muy, r+mux] = Votes[r+muy, r+mux] + \
-            dMag[Voting[0][i]][Voting[1][i]]
+        Votes[r + muy, r + mux] = (Votes[r + muy, r + mux] +
+                                   dMag[Voting[0][i]][Voting[1][i]])
 
     # create voting kernel
-    x = np.linspace(0, np.ceil(2*3*vSigma), int(np.ceil(2*3*vSigma) + 1))
-    y = np.linspace(0, np.ceil(2*3*vSigma), int(np.ceil(2*3*vSigma) + 1))
-    x -= np.ceil(2*3*vSigma)/2  # center at zero
-    y -= np.ceil(2*3*vSigma)/2
+    x = np.linspace(0, np.ceil(2 * 3 * vSigma),
+                    int(np.ceil(2 * 3 * vSigma) + 1))
+    y = np.linspace(0, np.ceil(2 * 3 * vSigma),
+                    int(np.ceil(2 * 3 * vSigma) + 1))
+    x -= np.ceil(2 * 3 * vSigma) / 2  # center at zero
+    y -= np.ceil(2 * 3 * vSigma) / 2
     x = np.reshape(x, (1, x.size))  # reshape to 2D row and column vectors
     y = np.reshape(y, (y.size, 1))
-    xK = np.exp(-x**2 / (2 * vSigma**2)) / (sSigma * (2 * np.pi) ** 0.5)
-    yK = np.exp(-y**2 / (2 * vSigma**2)) / (sSigma * (2 * np.pi) ** 0.5)
+    xK = np.exp(-(x**2) / (2 * vSigma**2)) / (sSigma * (2 * np.pi)**0.5)
+    yK = np.exp(-(y**2) / (2 * vSigma**2)) / (sSigma * (2 * np.pi)**0.5)
 
     # perform convolutions with voting kernel for vote-smoothing
-    Votes = signal.convolve2d(Votes, xK, mode='full', boundary='fill')
-    Votes = signal.convolve2d(Votes, yK, mode='full', boundary='fill')
+    Votes = signal.convolve2d(Votes, xK, mode="full", boundary="fill")
+    Votes = signal.convolve2d(Votes, yK, mode="full", boundary="fill")
 
     # crop voting image to size of original input image
-    Votes = Votes[r+np.floor(x.size/2):-(r+np.ceil(x.size/2)),
-                  r+np.floor(x.size/2):-(r+np.ceil(x.size/2))]
+    Votes = Votes[r + np.floor(x.size / 2):-(r + np.ceil(x.size / 2)),
+                  r + np.floor(x.size / 2):-(r + np.ceil(x.size / 2)), ]
 
     # generate sets of potential seed points
-    Seeds = [None]*np.arange(np.floor(10 * Psi) / 10, 0.9, 0.1).size
+    Seeds = [None] * np.arange(np.floor(10 * Psi) / 10, 0.9, 0.1).size
     for i, p in enumerate(np.arange(np.floor(10 * Psi) / 10, 0.9, 0.1)):
         Points = np.nonzero(Votes >= p * Votes.max())
-        Seeds[i] = np.column_stack((Points[0].transpose(),
-                                    Points[1].transpose()))
+        Seeds[i] = np.column_stack(
+            (Points[0].transpose(), Points[1].transpose()))
 
     # concatenate seed point lists
     Seeds = np.vstack(Seeds)
@@ -121,7 +124,7 @@ def gaussian_voting(I, rmax=35, rmin=10, sSigma=5, Tau=5, bw=15, Psi=0.3):
     ms.fit(Seeds)
 
     # build output tuple
-    Output = collections.namedtuple('Output', ['X', 'Y'])
+    Output = collections.namedtuple("Output", ["X", "Y"])
     Nuclei = Output(ms.cluster_centers_[:, 1], ms.cluster_centers_[:, 0])
 
     return Nuclei, Votes

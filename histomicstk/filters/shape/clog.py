@@ -1,5 +1,4 @@
 import numpy as np
-
 from scipy.ndimage.filters import gaussian_laplace
 from scipy.ndimage.morphology import distance_transform_edt
 
@@ -75,7 +74,8 @@ def clog(im_input, im_mask, sigma_min, sigma_max):
     for sigma in sigma_list:
 
         # generate normalized filter response
-        im_log_cur = sigma**2 * gaussian_laplace(im_input, sigma, mode='mirror')
+        im_log_cur = sigma**2 * gaussian_laplace(
+            im_input, sigma, mode="mirror")
 
         # constrain LoG response
         im_log_cur[im_sigma_ubound < sigma] = MIN_FLOAT

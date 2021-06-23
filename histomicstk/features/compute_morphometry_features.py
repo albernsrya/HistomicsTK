@@ -1,4 +1,5 @@
 from collections import OrderedDict
+
 import numpy as np
 import pandas as pd
 from skimage.measure import regionprops
@@ -101,24 +102,24 @@ def compute_morphometry_features(im_label, rprops=None):
 
     # List of feature names
     featname_map = OrderedDict({
-        'Orientation.Orientation': 'orientation',
-        'Size.Area': 'area',
-        'Size.ConvexHullArea': 'convex_area',
-        'Size.MajorAxisLength': 'major_axis_length',
-        'Size.MinorAxisLength': 'minor_axis_length',
-        'Size.Perimeter': 'perimeter',
-        'Shape.Circularity': None,
-        'Shape.Eccentricity': 'eccentricity',
-        'Shape.EquivalentDiameter': 'equivalent_diameter',
-        'Shape.Extent': 'extent',
-        'Shape.FractalDimension': None,
-        'Shape.MinorMajorAxisRatio': None,
-        'Shape.Solidity': 'solidity',
+        "Orientation.Orientation": "orientation",
+        "Size.Area": "area",
+        "Size.ConvexHullArea": "convex_area",
+        "Size.MajorAxisLength": "major_axis_length",
+        "Size.MinorAxisLength": "minor_axis_length",
+        "Size.Perimeter": "perimeter",
+        "Shape.Circularity": None,
+        "Shape.Eccentricity": "eccentricity",
+        "Shape.EquivalentDiameter": "equivalent_diameter",
+        "Shape.Extent": "extent",
+        "Shape.FractalDimension": None,
+        "Shape.MinorMajorAxisRatio": None,
+        "Shape.Solidity": "solidity",
     })
-    hu_cols = ['Shape.HuMoments%d' % k for k in range(1, 8)]
+    hu_cols = ["Shape.HuMoments%d" % k for k in range(1, 8)]
     featname_map.update({col: None for col in hu_cols})
     if intensity_wtd:
-        wtd_hu_cols = [col.replace('.Hu', '.WeightedHu') for col in hu_cols]
+        wtd_hu_cols = [col.replace(".Hu", ".WeightedHu") for col in hu_cols]
         featname_map.update({col: None for col in wtd_hu_cols})
     feature_list = featname_map.keys()
     mapped_feats = [k for k, v in featname_map.items() if v is not None]
@@ -137,19 +138,20 @@ def compute_morphometry_features(im_label, rprops=None):
 
         # compute Circularity
         numerator = 4 * np.pi * nprop.area
-        denominator = nprop.perimeter ** 2
+        denominator = nprop.perimeter**2
         if denominator > 0:
-            fdata.at[i, 'Shape.Circularity'] = numerator / denominator
+            fdata.at[i, "Shape.Circularity"] = numerator / denominator
 
         # compute fractal dimension (boundary complexity)
-        fdata.at[i, 'Shape.FractalDimension'] = _fractal_dimension(nprop.image)
+        fdata.at[i, "Shape.FractalDimension"] = _fractal_dimension(nprop.image)
 
         # compute Minor to Major axis ratio
         if nprop.major_axis_length > 0:
-            fdata.at[i, 'Shape.MinorMajorAxisRatio'] = \
-                nprop.minor_axis_length / nprop.major_axis_length
+            fdata.at[i,
+                     "Shape.MinorMajorAxisRatio"] = (nprop.minor_axis_length /
+                                                     nprop.major_axis_length)
         else:
-            fdata.at[i, 'Shape.MinorMajorAxisRatio'] = 1
+            fdata.at[i, "Shape.MinorMajorAxisRatio"] = 1
 
         # Hu moments, raw and possibly also intensity-weighted
         fdata.loc[i, hu_cols] = nprop.moments_hu
@@ -173,7 +175,7 @@ def _fractal_dimension(Z):
 
     """
     # Only for 2d binary image
-    assert(len(Z.shape) == 2)
+    assert len(Z.shape) == 2
     Z = Z > 0
 
     # From https://github.com/rougier/numpy-100 (#87)
@@ -181,7 +183,8 @@ def _fractal_dimension(Z):
         S = np.add.reduceat(
             np.add.reduceat(arr, np.arange(0, arr.shape[0], k), axis=0),
             np.arange(0, arr.shape[1], k),
-            axis=1)
+            axis=1,
+        )
         # We count non-empty (0) and non-full boxes (k*k)
         return len(np.where((S > 0) & (S < k * k))[0])
 
@@ -189,13 +192,13 @@ def _fractal_dimension(Z):
     p = min(Z.shape)
 
     # Greatest power of 2 less than or equal to p
-    n = 2 ** np.floor(np.log(p) / np.log(2))
+    n = 2**np.floor(np.log(p) / np.log(2))
 
     # Extract the exponent
     n = int(np.log(n) / np.log(2))
 
     # Build successive box sizes (from 2**n down to 2**1)
-    sizes = 2 ** np.arange(n, 1, -1)
+    sizes = 2**np.arange(n, 1, -1)
 
     # Actual box counting with decreasing size
     counts = []

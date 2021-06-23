@@ -2,8 +2,13 @@ import numpy as np
 import scipy.ndimage.filters as spf
 
 
-def gradient_diffusion(im_dx, im_dy, im_fgnd_mask,
-                       mu=5, lamda=5, iterations=10, dt=0.05):
+def gradient_diffusion(im_dx,
+                       im_dy,
+                       im_fgnd_mask,
+                       mu=5,
+                       lamda=5,
+                       iterations=10,
+                       dt=0.05):
     """
     Diffusion of gradient field using Navier-Stokes equation. Used for
     smoothing/denoising a gradient field.
@@ -68,11 +73,9 @@ def gradient_diffusion(im_dx, im_dy, im_fgnd_mask,
 
         # calculate laplacians of current solution
         im_vx += dt * (mu * spf.laplace(im_vx) +
-                       (lamda + mu) * DivX +
-                       im_fgnd_mask * (im_dx - im_vx))
+                       (lamda + mu) * DivX + im_fgnd_mask * (im_dx - im_vx))
         im_vy += dt * (mu * spf.laplace(im_vy) +
-                       (lamda + mu) * DivY +
-                       im_fgnd_mask * (im_dy - im_vy))
+                       (lamda + mu) * DivY + im_fgnd_mask * (im_dy - im_vy))
 
     # return solution
     return im_vx, im_vy

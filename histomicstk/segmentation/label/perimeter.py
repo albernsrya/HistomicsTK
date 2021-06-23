@@ -42,15 +42,17 @@ def perimeter(im_label, conn=4):
     Mask = np.logical_or(Mask, Temp)
 
     # additional calculations if conn == 8
-    if(conn == 8):
+    if conn == 8:
 
         # slope 1 diagonal shift
-        Temp[1:-1, 0:-2] = np.not_equal(im_label[0:-2, 1:-2], im_label[1:-1, 0:-2])
+        Temp[1:-1, 0:-2] = np.not_equal(im_label[0:-2, 1:-2], im_label[1:-1,
+                                                                       0:-2])
         Temp[0:-2, 1:-1] = np.logical_or(Temp[0:-2, 1:-1], Temp[1:-1, 0:-2])
         Mask = np.logical_or(Mask, Temp)
 
         # slope -1 diagonal shift
-        Temp[1:-1, 1:-1] = np.not_equal(im_label[0:-2, 0:-2], im_label[1:-1, 1:-1])
+        Temp[1:-1, 1:-1] = np.not_equal(im_label[0:-2, 0:-2], im_label[1:-1,
+                                                                       1:-1])
         Temp[0:-2, 0:-2] = np.logical_or(Temp[0:-2, 0:-2], Temp[1:-1, 1:-1])
         Mask = np.logical_or(Mask, Temp)
 

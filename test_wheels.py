@@ -19,19 +19,26 @@ python "$CLIPATH/NucleiDetection/NucleiDetection.py" tcga.svs sample.anot \\
 true"""
 
 containers = [
-    'python:3.6',
-    'python:3.7',
-    'python:3.8',
-    'python:3.9',
-    'centos/python-36-centos7',
+    "python:3.6",
+    "python:3.7",
+    "python:3.8",
+    "python:3.9",
+    "centos/python-36-centos7",
 ]
 
 for container in containers:
-    print('---- Testing in %s ----' % container)
+    print("---- Testing in %s ----" % container)
     subprocess.check_call([
-        'docker', 'run', '-v',
-        '%s/wheels:/wheels' % os.path.dirname(os.path.realpath(__file__)),
-        '--rm', container, 'sh', '-c', script])
+        "docker",
+        "run",
+        "-v",
+        "%s/wheels:/wheels" % os.path.dirname(os.path.realpath(__file__)),
+        "--rm",
+        container,
+        "sh",
+        "-c",
+        script,
+    ])
 
 # To test manually, run a container such as
 #  docker run -v `pwd`/docs:/wheels --rm -it python:3.7 bash

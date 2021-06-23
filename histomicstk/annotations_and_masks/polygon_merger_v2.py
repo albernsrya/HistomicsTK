@@ -8,9 +8,10 @@ import numpy as np
 from pandas import DataFrame  # , concat
 from shapely.geometry.polygon import Polygon
 from shapely.ops import cascaded_union
-from histomicstk.annotations_and_masks.masks_to_annotations_handler import (
-    _parse_annot_coords, )
-from histomicstk.annotations_and_masks.pyrtree.rtree import RTree, Rect
+
+from histomicstk.annotations_and_masks.masks_to_annotations_handler import \
+    _parse_annot_coords
+from histomicstk.annotations_and_masks.pyrtree.rtree import Rect, RTree
 from histomicstk.utils.general_utils import Base_HTK_Class
 
 # %% =====================================================================
@@ -54,9 +55,9 @@ class Polygon_merger_v2(Base_HTK_Class):
         # see: https://stackoverflow.com/questions/8187082/how-can-you-set-...
         # class-attributes-from-variable-arguments-kwargs-in-python
         default_attr = {
-            'verbose': 1,
-            'monitorPrefix': "",
-            'merge_thresh': 3,
+            "verbose": 1,
+            "monitorPrefix": "",
+            "merge_thresh": 3,
         }
         default_attr.update(kwargs)
         super().__init__(default_attr=default_attr)
@@ -83,9 +84,15 @@ class Polygon_merger_v2(Base_HTK_Class):
         """Add contour bounding boxes to R-tree."""
         self.rtree = RTree()
         for cidx, cont in self.contours_slice.iterrows():
-            self.rtree.insert("polygon-%d" % cidx, Rect(
-                minx=cont['xmin'], miny=cont['ymin'],
-                maxx=cont['xmax'], maxy=cont['ymax']))
+            self.rtree.insert(
+                "polygon-%d" % cidx,
+                Rect(
+                    minx=cont["xmin"],
+                    miny=cont["ymin"],
+                    maxx=cont["xmax"],
+                    maxy=cont["ymax"],
+                ),
+            )
 
     # %% =====================================================================
 
@@ -113,9 +120,11 @@ class Polygon_merger_v2(Base_HTK_Class):
             """Recursively add hierarchy levels."""
             lk = "level-%d" % (level)
 
-            child_nodes = [
-                {'nidx': k, 'parent_idx': parent_idx,
-                 'is_leaf': type(v) is not dict} for k, v in node_dict.items()]
+            child_nodes = [{
+                "nidx": k,
+                "parent_idx": parent_idx,
+                "is_leaf": type(v) is not dict
+            } for k, v in node_dict.items()]
 
             if len(child_nodes) < 1:
                 return
@@ -129,7 +138,9 @@ class Polygon_merger_v2(Base_HTK_Class):
             # add next level
             for nidx, ndict in node_dict.items():
                 if type(ndict) is dict:
-                    _add_hierarchy_level(ndict, level=level+1, parent_idx=nidx)
+                    _add_hierarchy_level(ndict,
+                                         level=level + 1,
+                                         parent_idx=nidx)
 
         _add_hierarchy_level(self.tree_dict, level=0, parent_idx=0)
 
@@ -148,7 +159,7 @@ class Polygon_merger_v2(Base_HTK_Class):
     def _merge_leafs(self, leafs):
         nest_polygons = []
         for leaf in leafs:
-            leafidx = int(leaf.split('polygon-')[1])
+            leafidx = int(leaf.split("polygon-")[1])
             nest = dict(self.contours_slice.loc[leafidx, :])
             coords = _parse_annot_coords(nest)
             nest_polygons.append(Polygon(coords))
@@ -175,13 +186,14 @@ class Polygon_merger_v2(Base_HTK_Class):
             # merge polygons from previous level
             to_merge = dict()
             for node in self.hierarchy["level-%d" % level]:
-                if not node['is_leaf']:
-                    if node['parent_idx'] not in to_merge.keys():
-                        to_merge[node['parent_idx']] = []
-                    to_merge[node['parent_idx']].append(merged_polygons_all[
-                        "level-%d" % (level + 1)][node['nidx']])
-                    del merged_polygons_all[
-                        "level-%d" % (level + 1)][node['nidx']]
+                if not node["is_leaf"]:
+                    if node["parent_idx"] not in to_merge.keys():
+                        to_merge[node["parent_idx"]] = []
+                    to_merge[node["parent_idx"]].append(
+                        merged_polygons_all["level-%d" %
+                                            (level + 1)][node["nidx"]])
+                    del merged_polygons_all["level-%d" %
+                                            (level + 1)][node["nidx"]]
 
             for parent_idx, polygon_list in to_merge.items():
                 merged_polygons[parent_idx] = self._merge_polygons(
@@ -190,20 +202,20 @@ class Polygon_merger_v2(Base_HTK_Class):
             # merge polygons from this level
             to_merge = dict()
             for node in self.hierarchy["level-%d" % level]:
-                if node['is_leaf']:
-                    if node['parent_idx'] not in to_merge.keys():
-                        to_merge[node['parent_idx']] = []
-                    self.rtree.cursor._become(node['nidx'])
-                    to_merge[node['parent_idx']].append(
+                if node["is_leaf"]:
+                    if node["parent_idx"] not in to_merge.keys():
+                        to_merge[node["parent_idx"]] = []
+                    self.rtree.cursor._become(node["nidx"])
+                    to_merge[node["parent_idx"]].append(
                         self.rtree.cursor.leaf_obj())
 
             for parent_idx, leafs in to_merge.items():
                 merged_polygons[parent_idx] = self._merge_leafs(leafs)
 
             # assign to persistent dict
-            merged_polygons_all['level-%d' % level] = merged_polygons
+            merged_polygons_all["level-%d" % level] = merged_polygons
 
-        return merged_polygons_all['level-0'][0]
+        return merged_polygons_all["level-0"][0]
 
     # %% =====================================================================
 
@@ -219,33 +231,36 @@ class Polygon_merger_v2(Base_HTK_Class):
     def _add_single_merged_edge_contour(self, polygon, group):
         """Add single contour to self.new_contours (Internal)."""
         idx = self.new_contours.shape[0]
-        self.new_contours.loc[idx, 'type'] = 'polyline'
-        self.new_contours.loc[idx, 'group'] = group
-        self.new_contours.loc[idx, 'has_holes'] = int(
-            polygon.boundary.geom_type == 'MultiLineString')
-        coords_x, coords_y, coords = self._get_coord_str_from_polygon(
-            polygon)
-        self.new_contours.loc[idx, 'coords_x'] = coords_x
-        self.new_contours.loc[idx, 'coords_y'] = coords_y
+        self.new_contours.loc[idx, "type"] = "polyline"
+        self.new_contours.loc[idx, "group"] = group
+        self.new_contours.loc[idx, "has_holes"] = int(
+            polygon.boundary.geom_type == "MultiLineString")
+        coords_x, coords_y, coords = self._get_coord_str_from_polygon(polygon)
+        self.new_contours.loc[idx, "coords_x"] = coords_x
+        self.new_contours.loc[idx, "coords_y"] = coords_y
         xmin, ymin = np.min(coords, axis=0)
         xmax, ymax = np.max(coords, axis=0)
-        self.new_contours.loc[idx, 'xmin'] = xmin
-        self.new_contours.loc[idx, 'ymin'] = ymin
-        self.new_contours.loc[idx, 'xmax'] = xmax
-        self.new_contours.loc[idx, 'ymax'] = ymax
-        self.new_contours.loc[idx, 'bbox_area'] = int(
+        self.new_contours.loc[idx, "xmin"] = xmin
+        self.new_contours.loc[idx, "ymin"] = ymin
+        self.new_contours.loc[idx, "xmax"] = xmax
+        self.new_contours.loc[idx, "ymax"] = ymax
+        self.new_contours.loc[idx, "bbox_area"] = int(
             (ymax - ymin) * (xmax - xmin))
 
     # %% =====================================================================
 
-    def _add_merged_multipolygon_contours(
-            self, merged_multipolygon, group, monitorPrefix=""):
+    def _add_merged_multipolygon_contours(self,
+                                          merged_multipolygon,
+                                          group,
+                                          monitorPrefix=""):
         """Add merged polygons to self.new_contours df (Internal)."""
         if merged_multipolygon.geom_type == "Polygon":
-            merged_multipolygon = [merged_multipolygon, ]
+            merged_multipolygon = [
+                merged_multipolygon,
+            ]
         for pno, polygon in enumerate(merged_multipolygon):
-            self._print2("%s: contour %d of %d" % (
-                monitorPrefix, pno+1, len(merged_multipolygon)))
+            self._print2("%s: contour %d of %d" %
+                         (monitorPrefix, pno + 1, len(merged_multipolygon)))
             self._add_single_merged_edge_contour(polygon, group=group)
 
     # %% =====================================================================
@@ -268,8 +283,8 @@ class Polygon_merger_v2(Base_HTK_Class):
 
         # add contours to new dataframe
         self._print1("%s: _add_merged_multipolygon_contours" % monitorPrefix)
-        self._add_merged_multipolygon_contours(
-            merged_multipolygon, group=group)
+        self._add_merged_multipolygon_contours(merged_multipolygon,
+                                               group=group)
 
     # %% =====================================================================
 
@@ -278,5 +293,6 @@ class Polygon_merger_v2(Base_HTK_Class):
         for group in self.unique_groups:
             monitorPrefix = "%s: %s" % (self.monitorPrefix, group)
             self.run_for_single_group(group, monitorPrefix=monitorPrefix)
+
 
 # %% ==========================================================================

@@ -1,11 +1,15 @@
 """Placeholder."""
-from histomicstk.preprocessing import color_conversion
 import numpy as np
 
+from histomicstk.preprocessing import color_conversion
 
-def reinhard(
-        im_src, target_mu, target_sigma, src_mu=None, src_sigma=None,
-        mask_out=None):
+
+def reinhard(im_src,
+             target_mu,
+             target_sigma,
+             src_mu=None,
+             src_sigma=None,
+             mask_out=None):
     """Perform Reinhard color normalization.
 
     Transform the color characteristics of an image to a desired standard.
@@ -76,8 +80,7 @@ def reinhard(
     # mask out irrelevant tissue / whitespace / etc
     if mask_out is not None:
         mask_out = mask_out[..., None]
-        im_lab = np.ma.masked_array(
-            im_lab, mask=np.tile(mask_out, (1, 1, 3)))
+        im_lab = np.ma.masked_array(im_lab, mask=np.tile(mask_out, (1, 1, 3)))
 
     # calculate src_mu and src_sigma if either is not provided
     if (src_mu is None) or (src_sigma is None):

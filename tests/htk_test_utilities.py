@@ -1,11 +1,12 @@
 import os
-import pytest
 import subprocess
 import tempfile
 import time
 import warnings
+
 import docker
 import girder_client
+import pytest
 
 
 def getTestFilePath(name):
@@ -14,28 +15,28 @@ def getTestFilePath(name):
     :param name: The name of the file.
     :returns: the path to the file.
     """
-    return os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), 'test_files', name)
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                        "test_files", name)
 
 
 def _get_htk_ipaddr(dclient):
     # search docker containers for a DSA docker container
     # and fetch its IP address
-    return list(dclient.containers.list(
-        filters={'label': 'HISTOMICSTK_GC_TEST'})[0].attrs[
-            'NetworkSettings']['Networks'].values())[0]['IPAddress']
+    return list(
+        dclient.containers.list(filters={"label": "HISTOMICSTK_GC_TEST"})
+        [0].attrs["NetworkSettings"]["Networks"].values())[0]["IPAddress"]
 
 
 def _connect_girder_client_to_local_dsa(ip):
     # connect a girder client to the local DSA docker
-    apiUrl = 'http://%s:8080/api/v1' % ip
+    apiUrl = "http://%s:8080/api/v1" % ip
     gc = girder_client.GirderClient(apiUrl=apiUrl)
-    gc.authenticate('admin', 'password')
+    gc.authenticate("admin", "password")
     return gc
 
 
 def _connect_to_existing_local_dsa():
-    client = docker.from_env(version='auto')
+    client = docker.from_env(version="auto")
     ipaddr = _get_htk_ipaddr(client)
     return _connect_girder_client_to_local_dsa(ipaddr)
 
@@ -44,24 +45,27 @@ def _create_and_connect_to_local_dsa():
     # create a local dsa docker and connect to it
     cwd = os.getcwd()
     thisDir = os.path.dirname(os.path.realpath(__file__))
-    externdatadir = os.path.join(thisDir, '..', '.tox', 'externaldata')
+    externdatadir = os.path.join(thisDir, "..", ".tox", "externaldata")
     if not os.path.exists(externdatadir):
         os.makedirs(externdatadir)
     os.chdir(thisDir)
-    outfilePath = os.path.join(
-        tempfile.gettempdir(), 'histomicstk_test_girder_log.txt')
-    with open(outfilePath, 'w') as outfile:
+    outfilePath = os.path.join(tempfile.gettempdir(),
+                               "histomicstk_test_girder_log.txt")
+    with open(outfilePath, "w") as outfile:
 
         # build a DSA docker container locally
-        proc = subprocess.Popen([
-            'docker-compose', 'up', '--build'],
-            close_fds=True, stdout=outfile, stderr=outfile)
+        proc = subprocess.Popen(
+            ["docker-compose", "up", "--build"],
+            close_fds=True,
+            stdout=outfile,
+            stderr=outfile,
+        )
 
         os.chdir(cwd)
         timeout = time.time() + 1200
 
         # connect to docker and take a look at all its containers
-        client = docker.from_env(version='auto')
+        client = docker.from_env(version="auto")
         while time.time() < timeout:
             try:
                 ipaddr = _get_htk_ipaddr(client)
@@ -91,8 +95,9 @@ def _create_and_connect_to_local_dsa():
 #     done by one module do not carry over to the next module.
 #
 
+
 # @pytest.fixture(scope='session')
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def girderClient():
     """
     Yield an authenticated girder client that points to the server.
@@ -128,8 +133,7 @@ def girderClient():
         warnings.warn(
             e.__repr__() + "\n"
             "Looks like there's no existing local DSA docker running; "
-            "will create one now and try again.",
-        )
+            "will create one now and try again.", )
         # create a local dsa docker and connect to it
         gc, proc = _create_and_connect_to_local_dsa()
 

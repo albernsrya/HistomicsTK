@@ -28,57 +28,83 @@ def rag(im_label, neigh_conn=4):
     adj_mat = np.zeros((im_label.max(), im_label.max()), dtype=np.bool)
 
     # process 4-neigh_conn horizontal connections
-    Mask = (im_label[:, 1:-1] != im_label[:, 0:-2]) & \
-           (im_label[:, 1:-1] != 0) & (im_label[:, 0:-2] != 0)
+    Mask = ((im_label[:, 1:-1] != im_label[:, 0:-2])
+            & (im_label[:, 1:-1] != 0)
+            & (im_label[:, 0:-2] != 0))
     Indices = np.nonzero(Mask)
-    Xc = np.concatenate((im_label[Indices[0], Indices[1]][:, np.newaxis],
-                         im_label[Indices[0], Indices[1] + 1][:, np.newaxis]),
-                        axis=1)
+    Xc = np.concatenate(
+        (
+            im_label[Indices[0], Indices[1]][:, np.newaxis],
+            im_label[Indices[0], Indices[1] + 1][:, np.newaxis],
+        ),
+        axis=1,
+    )
 
     # process 4-neigh_conn vertical connections
-    Mask = (im_label[1:-1, :] != im_label[0:-2, :]) & \
-           (im_label[1:-1, :] != 0) & (im_label[0:-2, :] != 0)
+    Mask = ((im_label[1:-1, :] != im_label[0:-2, :])
+            & (im_label[1:-1, :] != 0)
+            & (im_label[0:-2, :] != 0))
     Indices = np.nonzero(Mask)
-    Xc = np.concatenate((Xc,
-                         np.concatenate((im_label[Indices[0], Indices[1]]
-                                         [:, np.newaxis],
-                                         im_label[Indices[0] + 1, Indices[1]]
-                                         [:, np.newaxis]), axis=1)),
-                        axis=0)
+    Xc = np.concatenate(
+        (
+            Xc,
+            np.concatenate(
+                (
+                    im_label[Indices[0], Indices[1]][:, np.newaxis],
+                    im_label[Indices[0] + 1, Indices[1]][:, np.newaxis],
+                ),
+                axis=1,
+            ),
+        ),
+        axis=0,
+    )
 
     # process additional 8-neighbor relationships
     if neigh_conn == 8:
 
         # shift upper-right ([1, 1])
-        Mask = (im_label[1:-1, 0:-2] != im_label[0:-2, 1:-1]) & \
-               (im_label[1:-1, 0:-2] != 0) & (im_label[0:-2, 1:-1] != 0)
+        Mask = ((im_label[1:-1, 0:-2] != im_label[0:-2, 1:-1])
+                & (im_label[1:-1, 0:-2] != 0)
+                & (im_label[0:-2, 1:-1] != 0))
         Indices = np.nonzero(Mask)
-        Xc = np.concatenate((
-            Xc,
-            np.concatenate((
-                im_label[Indices[0] + 1, Indices[1]][:, np.newaxis],
-                im_label[Indices[0], Indices[1] + 1][:, np.newaxis]),
-                axis=1)),
-            axis=0
+        Xc = np.concatenate(
+            (
+                Xc,
+                np.concatenate(
+                    (
+                        im_label[Indices[0] + 1, Indices[1]][:, np.newaxis],
+                        im_label[Indices[0], Indices[1] + 1][:, np.newaxis],
+                    ),
+                    axis=1,
+                ),
+            ),
+            axis=0,
         )
 
         # shift upper-left ([-1, 1])
-        Mask = (im_label[0:-2, 0:-2] != im_label[1:-1, 1:-1]) & \
-               (im_label[0:-2, 0:-2] != 0) & (im_label[1:-1, 1:-1] != 0)
+        Mask = ((im_label[0:-2, 0:-2] != im_label[1:-1, 1:-1])
+                & (im_label[0:-2, 0:-2] != 0)
+                & (im_label[1:-1, 1:-1] != 0))
         Indices = np.nonzero(Mask)
-        Xc = np.concatenate((
-            Xc,
-            np.concatenate((
-                im_label[Indices[0], Indices[1]][:, np.newaxis],
-                im_label[Indices[0] + 1, Indices[1] + 1][:, np.newaxis]),
-                axis=1)),
-            axis=0
+        Xc = np.concatenate(
+            (
+                Xc,
+                np.concatenate(
+                    (
+                        im_label[Indices[0], Indices[1]][:, np.newaxis],
+                        im_label[Indices[0] + 1, Indices[1] + 1][:,
+                                                                 np.newaxis],
+                    ),
+                    axis=1,
+                ),
+            ),
+            axis=0,
         )
 
     # add entries to adjacency matrix
     for i in range(Xc.shape[0]):
-        adj_mat[Xc[i, 0]-1, Xc[i, 1]-1] = True
-        adj_mat[Xc[i, 1]-1, Xc[i, 0]-1] = True
+        adj_mat[Xc[i, 0] - 1, Xc[i, 1] - 1] = True
+        adj_mat[Xc[i, 1] - 1, Xc[i, 0] - 1] = True
 
     # return result
     return adj_mat

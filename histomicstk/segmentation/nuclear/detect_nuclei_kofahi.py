@@ -1,13 +1,19 @@
 import numpy as np
 import scipy as sp
 import skimage.morphology
-import histomicstk.filters.shape as htk_shape_filters
+
 import histomicstk as htk
+import histomicstk.filters.shape as htk_shape_filters
 
 
-def detect_nuclei_kofahi(im_nuclei_stain, im_nuclei_fgnd_mask, min_radius,
-                         max_radius, min_nucleus_area, local_max_search_radius):
-
+def detect_nuclei_kofahi(
+    im_nuclei_stain,
+    im_nuclei_fgnd_mask,
+    min_radius,
+    max_radius,
+    min_nucleus_area,
+    local_max_search_radius,
+):
     """Performs a nuclear segmentation using kofahi's method.
 
     This method uses scale-adaptive multi-scale Laplacian-of-Gaussian filtering
@@ -60,9 +66,10 @@ def detect_nuclei_kofahi(im_nuclei_stain, im_nuclei_fgnd_mask, min_radius,
 
     # run adaptive multi-scale LoG filter
     im_log_max, im_sigma_max = htk_shape_filters.cdog(
-        im_nuclei_stain, im_nuclei_fgnd_mask,
+        im_nuclei_stain,
+        im_nuclei_fgnd_mask,
         sigma_min=min_radius / np.sqrt(2),
-        sigma_max=max_radius / np.sqrt(2)
+        sigma_max=max_radius / np.sqrt(2),
     )
 
     # apply local maximum clustering

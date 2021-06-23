@@ -1,14 +1,21 @@
 import numpy as np
+from scipy import signal
+from scipy.optimize import fmin_slsqp
+from scipy.stats import norm
 from skimage import color
 from sklearn.neighbors import KernelDensity
-from scipy.stats import norm
-from scipy.optimize import fmin_slsqp
-from scipy import signal
 
 
-def simple_mask(im_rgb, bandwidth=2, bgnd_std=2.5, tissue_std=30,
-                min_peak_width=10, max_peak_width=25,
-                fraction=0.10, min_tissue_prob=0.05):
+def simple_mask(
+    im_rgb,
+    bandwidth=2,
+    bgnd_std=2.5,
+    tissue_std=30,
+    min_peak_width=10,
+    max_peak_width=25,
+    fraction=0.10,
+    min_tissue_prob=0.05,
+):
     """Performs segmentation of the foreground (tissue)
     Uses a simple two-component Gaussian mixture model to mask tissue areas
     from background in brightfield H&E images. Kernel-density estimation is
@@ -63,7 +70,7 @@ def simple_mask(im_rgb, bandwidth=2, bgnd_std=2.5, tissue_std=30,
     sI = np.random.choice(im_rgb.flatten(), num_samples)[:, np.newaxis]
 
     # kernel-density smoothed histogram
-    KDE = KernelDensity(kernel='gaussian', bandwidth=bandwidth).fit(sI)
+    KDE = KernelDensity(kernel="gaussian", bandwidth=bandwidth).fit(sI)
     xHist = np.linspace(0, 255, 256)[:, np.newaxis]
     yHist = np.exp(KDE.score_samples(xHist))[:, np.newaxis]
     yHist = yHist / sum(yHist)
@@ -79,7 +86,7 @@ def simple_mask(im_rgb, bandwidth=2, bgnd_std=2.5, tissue_std=30,
     if len(Peaks) > 1:
         TissuePeak = Peaks[yHist[Peaks[1:]].argmax() + 1]
     else:  # no peak found - take initial guess at 2/3 distance from origin
-        TissuePeak = xHist[int(np.round(0.66*xHist.size))].item()
+        TissuePeak = xHist[int(np.round(0.66 * xHist.size))].item()
 
     # analyze background peak to estimate variance parameter via FWHM
     BGScale = estimate_variance(xHist, yHist, BGPeak)
@@ -109,16 +116,17 @@ def simple_mask(im_rgb, bandwidth=2, bgnd_std=2.5, tissue_std=30,
     def gaussian_residuals(Parameters, y, x):
         mu1, mu2, sigma1, sigma2, p = Parameters
         yhat = gaussian_mixture(x, mu1, mu2, sigma1, sigma2, p)
-        return sum((y - yhat) ** 2)
+        return sum((y - yhat)**2)
 
     # fit Gaussian mixture model and unpack results
-    Parameters = fmin_slsqp(gaussian_residuals,
-                            [BGPeak, TissuePeak, BGScale, TissueScale, Mix],
-                            args=(yHist, xHist),
-                            bounds=[(0, 255), (0, 255),
-                                    (np.spacing(1), 10),
-                                    (np.spacing(1), 50), (0, 1)],
-                            iprint=0)
+    Parameters = fmin_slsqp(
+        gaussian_residuals,
+        [BGPeak, TissuePeak, BGScale, TissueScale, Mix],
+        args=(yHist, xHist),
+        bounds=[(0, 255), (0, 255), (np.spacing(1), 10), (np.spacing(1), 50),
+                (0, 1)],
+        iprint=0,
+    )
 
     muBackground = Parameters[0]
     muTissue = Parameters[1]
@@ -147,8 +155,8 @@ def simple_mask(im_rgb, bandwidth=2, bgnd_std=2.5, tissue_std=30,
     Endpoints = np.sort(255 - Endpoints)
 
     # generate mask
-    im_mask = (im_rgb <= ML) & (im_rgb >= Endpoints[0]) & \
-              (im_rgb <= Endpoints[1])
+    im_mask = (im_rgb <= ML) & (im_rgb >= Endpoints[0]) & (im_rgb <=
+                                                           Endpoints[1])
     im_mask = im_mask.astype(np.uint8)
 
     return im_mask

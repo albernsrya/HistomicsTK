@@ -1,9 +1,8 @@
 import math
 
 import numpy as np
-
-from scipy.ndimage.morphology import distance_transform_edt
 from scipy.ndimage.filters import gaussian_filter
+from scipy.ndimage.morphology import distance_transform_edt
 from skimage.transform import resize
 
 
@@ -68,7 +67,7 @@ def cdog(im_input, im_mask, sigma_min, sigma_max, num_octave_levels=3):
     im_sigma_ubound = np.clip(im_sigma_ubound, sigma_min, sigma_max)
 
     # compute number of levels in the scale space
-    sigma_ratio = 2 ** (1.0 / num_octave_levels)
+    sigma_ratio = 2**(1.0 / num_octave_levels)
 
     k = int(math.log(float(sigma_max) / sigma_min, sigma_ratio)) + 1
 
@@ -96,8 +95,8 @@ def cdog(im_input, im_mask, sigma_min, sigma_max, num_octave_levels=3):
 
         # Do cascaded convolution to keep convolutional kernel small
         # G(a) * G(b) = G(sqrt(a^2 + b^2))
-        sigma_conv = np.sqrt(sigma_next ** 2 - sigma_cur ** 2)
-        sigma_conv /= 2.0 ** n_octave
+        sigma_conv = np.sqrt(sigma_next**2 - sigma_cur**2)
+        sigma_conv /= 2.0**n_octave
 
         im_gauss_next = gaussian_filter(im_gauss_cur, sigma_conv)
 
@@ -112,7 +111,8 @@ def cdog(im_input, im_mask, sigma_min, sigma_max, num_octave_levels=3):
 
         if len(max_update_pixels[0]) > 0:
 
-            im_dog_octave_max[max_update_pixels] = im_dog_cur[max_update_pixels]
+            im_dog_octave_max[max_update_pixels] = im_dog_cur[
+                max_update_pixels]
             im_sigma_octave_max[max_update_pixels] = sigma_cur
 
             # print np.unique(im_sigma_octave_max)
@@ -130,32 +130,31 @@ def cdog(im_input, im_mask, sigma_min, sigma_max, num_octave_levels=3):
             # update maxima
             if num_octave_levels > 0:
 
-                im_dog_octave_max_rszd = resize(
-                    im_dog_octave_max, im_dog_max.shape, order=0)
+                im_dog_octave_max_rszd = resize(im_dog_octave_max,
+                                                im_dog_max.shape,
+                                                order=0)
 
             else:
 
                 im_dog_octave_max_rszd = im_dog_octave_max
 
-            max_pixels = np.where(
-                im_dog_octave_max_rszd > im_dog_max)
+            max_pixels = np.where(im_dog_octave_max_rszd > im_dog_max)
 
             if len(max_pixels[0]) > 0:
 
-                im_dog_max[max_pixels] = \
-                    im_dog_octave_max_rszd[max_pixels]
+                im_dog_max[max_pixels] = im_dog_octave_max_rszd[max_pixels]
 
                 if num_octave_levels > 0:
 
-                    im_sigma_octave_max_rszd = resize(
-                        im_sigma_octave_max, im_dog_max.shape, order=0)
+                    im_sigma_octave_max_rszd = resize(im_sigma_octave_max,
+                                                      im_dog_max.shape,
+                                                      order=0)
 
                 else:
 
                     im_sigma_octave_max_rszd = im_sigma_octave_max
 
-                im_sigma_max[max_pixels] = \
-                    im_sigma_octave_max_rszd[max_pixels]
+                im_sigma_max[max_pixels] = im_sigma_octave_max_rszd[max_pixels]
 
             # downsample images by 2 at the end of each octave
             if n_level == num_octave_levels:

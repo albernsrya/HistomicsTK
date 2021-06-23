@@ -5,18 +5,19 @@ Created on Wed Sep 18 03:29:24 2019.
 @author: mtageld
 """
 
-import numpy as np
-from PIL import Image
-from pandas import DataFrame
-from histomicstk.annotations_and_masks.annotation_and_mask_utils import (
-    get_image_from_htk_response)
-from histomicstk.preprocessing.color_deconvolution.color_deconvolution import (
-    color_deconvolution_routine)
-from histomicstk.annotations_and_masks.masks_to_annotations_handler import (
-    get_contours_from_mask, get_annotation_documents_from_contours)
 import cv2
-from skimage.filters import threshold_otsu, gaussian
+import numpy as np
+from pandas import DataFrame
+from PIL import Image
 from scipy import ndimage
+from skimage.filters import gaussian, threshold_otsu
+
+from histomicstk.annotations_and_masks.annotation_and_mask_utils import \
+    get_image_from_htk_response
+from histomicstk.annotations_and_masks.masks_to_annotations_handler import (
+    get_annotation_documents_from_contours, get_contours_from_mask)
+from histomicstk.preprocessing.color_deconvolution.color_deconvolution import \
+    color_deconvolution_routine
 
 Image.MAX_IMAGE_PIXELS = None
 
@@ -43,6 +44,7 @@ def get_slide_thumbnail(gc, slide_id):
     resp = gc.get(getStr, jsonResp=False)
     return get_image_from_htk_response(resp)
 
+
 # %%===========================================================================
 
 
@@ -51,13 +53,18 @@ def _deconv_color(im, **kwargs):
     Stains, _, _ = color_deconvolution_routine(im, **kwargs)
     return Stains, 0
 
+
 # %%===========================================================================
 
 
 def get_tissue_mask(
-        thumbnail_im,
-        deconvolve_first=False, stain_unmixing_routine_kwargs=None,
-        n_thresholding_steps=1, sigma=0., min_size=500):
+    thumbnail_im,
+    deconvolve_first=False,
+    stain_unmixing_routine_kwargs=None,
+    n_thresholding_steps=1,
+    sigma=0.0,
+    min_size=500,
+):
     """Get binary tissue mask from slide thumbnail.
 
     Parameters
@@ -87,13 +94,14 @@ def get_tissue_mask(
         largest contiguous tissue region.
 
     """
-    stain_unmixing_routine_kwargs = (
-        {} if stain_unmixing_routine_kwargs is None else stain_unmixing_routine_kwargs)
+    stain_unmixing_routine_kwargs = ({}
+                                     if stain_unmixing_routine_kwargs is None
+                                     else stain_unmixing_routine_kwargs)
 
     if deconvolve_first and (len(thumbnail_im.shape) == 3):
         # deconvolvve to ge hematoxylin channel (cellular areas)
         # hematoxylin channel return shows MINIMA so we invert
-        stain_unmixing_routine_kwargs['stains'] = ['hematoxylin', 'eosin']
+        stain_unmixing_routine_kwargs["stains"] = ["hematoxylin", "eosin"]
         Stains, _, _ = color_deconvolution_routine(
             thumbnail_im, **stain_unmixing_routine_kwargs)
         thumbnail = 255 - Stains[..., 0]
@@ -109,9 +117,11 @@ def get_tissue_mask(
 
         # gaussian smoothing of grayscale thumbnail
         if sigma > 0.0:
-            thumbnail = gaussian(
-                thumbnail, sigma=sigma,
-                output=None, mode='nearest', preserve_range=True)
+            thumbnail = gaussian(thumbnail,
+                                 sigma=sigma,
+                                 output=None,
+                                 mode="nearest",
+                                 preserve_range=True)
 
         # get threshold to keep analysis region
         try:
@@ -142,9 +152,13 @@ def get_tissue_mask(
 
 # %%===========================================================================
 
-def get_tissue_boundary_annotation_documents(
-        gc, slide_id, labeled,
-        color='rgb(0,0,0)', group='tissue', annprops=None):
+
+def get_tissue_boundary_annotation_documents(gc,
+                                             slide_id,
+                                             labeled,
+                                             color="rgb(0,0,0)",
+                                             group="tissue",
+                                             annprops=None):
     """Get annotation documents of tissue boundaries to visualize on DSA.
 
     Parameters
@@ -175,38 +189,50 @@ def get_tissue_boundary_annotation_documents(
     """
     # Get annotations properties
     if annprops is None:
-        slide_info = gc.get('item/%s/tiles' % slide_id)
+        slide_info = gc.get("item/%s/tiles" % slide_id)
         annprops = {
-            'F': slide_info['sizeX'] / labeled.shape[1],  # relative to base
-            'X_OFFSET': 0,
-            'Y_OFFSET': 0,
-            'opacity': 0,
-            'lineWidth': 4.0,
+            "F": slide_info["sizeX"] / labeled.shape[1],  # relative to base
+            "X_OFFSET": 0,
+            "Y_OFFSET": 0,
+            "opacity": 0,
+            "lineWidth": 4.0,
         }
 
     # Define GTCodes dataframe
-    GTCodes_df = DataFrame(columns=['group', 'GT_code', 'color'])
-    GTCodes_df.loc['tissue', 'group'] = group
-    GTCodes_df.loc['tissue', 'GT_code'] = 1
-    GTCodes_df.loc['tissue', 'color'] = color
+    GTCodes_df = DataFrame(columns=["group", "GT_code", "color"])
+    GTCodes_df.loc["tissue", "group"] = group
+    GTCodes_df.loc["tissue", "GT_code"] = 1
+    GTCodes_df.loc["tissue", "color"] = color
 
     # get annotation docs
     contours_tissue = get_contours_from_mask(
-        MASK=0 + (labeled > 0), GTCodes_df=GTCodes_df,
-        get_roi_contour=False, MIN_SIZE=0, MAX_SIZE=None, verbose=False,
-        monitorPrefix="tissue: getting contours")
+        MASK=0 + (labeled > 0),
+        GTCodes_df=GTCodes_df,
+        get_roi_contour=False,
+        MIN_SIZE=0,
+        MAX_SIZE=None,
+        verbose=False,
+        monitorPrefix="tissue: getting contours",
+    )
     annotation_docs = get_annotation_documents_from_contours(
-        contours_tissue.copy(), docnamePrefix='test', annprops=annprops,
-        verbose=False, monitorPrefix="tissue : annotation docs")
+        contours_tissue.copy(),
+        docnamePrefix="test",
+        annprops=annprops,
+        verbose=False,
+        monitorPrefix="tissue : annotation docs",
+    )
 
     return annotation_docs
+
 
 # %%===========================================================================
 
 
-def threshold_multichannel(
-        im, thresholds, channels=None,
-        just_threshold=False, get_tissue_mask_kwargs=None):
+def threshold_multichannel(im,
+                           thresholds,
+                           channels=None,
+                           just_threshold=False,
+                           get_tissue_mask_kwargs=None):
     """Threshold a multi-channel image (eg. HSI image) to get tissue.
 
     The relies on the fact that oftentimes some slide elements (eg blood
@@ -236,13 +262,14 @@ def threshold_multichannel(
         if not just_threshold, largest contiguous tissue region.
 
     """
-    channels = ['hue', 'saturation', 'intensity'] if channels is None else channels
+    channels = ["hue", "saturation", "intensity"
+                ] if channels is None else channels
 
     if get_tissue_mask_kwargs is None:
         get_tissue_mask_kwargs = {
-            'n_thresholding_steps': 1,
-            'sigma': 5.0,
-            'min_size': 10,
+            "n_thresholding_steps": 1,
+            "sigma": 5.0,
+            "min_size": 10,
         }
 
     # threshold each channel
@@ -251,17 +278,18 @@ def threshold_multichannel(
 
         channel = im[..., ax].copy()
 
-        mask[channel < thresholds[ch]['min']] = 0
-        mask[channel >= thresholds[ch]['max']] = 0
+        mask[channel < thresholds[ch]["min"]] = 0
+        mask[channel >= thresholds[ch]["max"]] = 0
 
     # smoothing, otsu thresholding then connected components
     if just_threshold or (np.unique(mask).shape[0] < 1):
         labeled = mask
     else:
-        get_tissue_mask_kwargs['deconvolve_first'] = False
+        get_tissue_mask_kwargs["deconvolve_first"] = False
         labeled, mask = get_tissue_mask(mask, **get_tissue_mask_kwargs)
 
     return labeled, mask
+
 
 # %%===========================================================================
 
@@ -281,5 +309,6 @@ def _get_largest_regions(labeled, top_n=10):
     labeled_im[mask == 0] = 0
 
     return labeled_im
+
 
 # %%===========================================================================

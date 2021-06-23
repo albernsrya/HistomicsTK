@@ -51,9 +51,8 @@ def max_clustering(im_response, im_fgnd_mask, r=10):
     """
 
     # find local maxima of all foreground pixels
-    mval, mind = _max_clustering_cython(
-        im_response, im_fgnd_mask.astype(np.int32), r
-    )
+    mval, mind = _max_clustering_cython(im_response,
+                                        im_fgnd_mask.astype(np.int32), r)
 
     # identify connected regions of local maxima and define their seeds
     im_label = skimage.measure.label(im_fgnd_mask & (im_response == mval))
@@ -74,7 +73,10 @@ def max_clustering(im_response, im_fgnd_mask, r=10):
     # compute object properties
     obj_props = skimage.measure.regionprops(im_label, im_response_nmzd)
 
-    obj_props = [prop for prop in obj_props if np.isfinite(prop.weighted_centroid).all()]
+    obj_props = [
+        prop for prop in obj_props
+        if np.isfinite(prop.weighted_centroid).all()
+    ]
 
     num_labels = len(obj_props)
 
