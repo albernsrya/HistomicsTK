@@ -35,14 +35,15 @@ def dilate_xor(im_label, neigh_width=8):
 
     # Get indices of background pixels within a given distance from an object
     neigh_rind, neigh_cind = np.where(
-        np.logical_and(im_dist > 0, im_dist <= neigh_width)
-    )
+        np.logical_and(im_dist > 0, im_dist <= neigh_width))
 
     # generate labeled neighborhood mask
     im_neigh_label = np.zeros_like(im_label)
 
-    im_neigh_label[neigh_rind, neigh_cind] = im_label[
-        closest_obj_rind[neigh_rind, neigh_cind],
-        closest_obj_cind[neigh_rind, neigh_cind]]
+    im_neigh_label[neigh_rind,
+                   neigh_cind] = im_label[closest_obj_rind[neigh_rind,
+                                                           neigh_cind],
+                                          closest_obj_cind[neigh_rind,
+                                                           neigh_cind], ]
 
     return im_neigh_label

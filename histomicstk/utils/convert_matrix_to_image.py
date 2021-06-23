@@ -11,4 +11,4 @@ def convert_matrix_to_image(m, shape):
     if len(shape) == 2:
         return m
 
-    return m.T.reshape(shape[:-1] + (m.shape[0],))
+    return m.T.reshape(shape[:-1] + (m.shape[0], ))

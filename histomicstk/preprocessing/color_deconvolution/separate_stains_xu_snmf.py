@@ -1,10 +1,11 @@
 """Placeholder."""
-import histomicstk.utils as utils
-from . import _linalg as htk_linalg
-
 import nimfa
 import numpy
 import numpy.linalg as np_linalg
+
+import histomicstk.utils as utils
+
+from . import _linalg as htk_linalg
 
 
 def separate_stains_xu_snmf(im_sda, w_init=None, beta=0.2):
@@ -52,10 +53,12 @@ def separate_stains_xu_snmf(im_sda, w_init=None, beta=0.2):
     # Image matrix
     m = utils.convert_image_to_matrix(im_sda)
     m = utils.exclude_nonfinite(m)
-    factorization = \
-        nimfa.Snmf(m, rank=m.shape[0] if w_init is None else w_init.shape[1],
-                   W=w_init,
-                   H=None if w_init is None else np_linalg.pinv(w_init).dot(m),
-                   beta=beta)
+    factorization = nimfa.Snmf(
+        m,
+        rank=m.shape[0] if w_init is None else w_init.shape[1],
+        W=w_init,
+        H=None if w_init is None else np_linalg.pinv(w_init).dot(m),
+        beta=beta,
+    )
     factorization.factorize()
     return htk_linalg.normalize(numpy.array(factorization.W))

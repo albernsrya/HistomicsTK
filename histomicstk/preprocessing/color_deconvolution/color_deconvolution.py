@@ -1,18 +1,21 @@
 """Placeholder."""
-from histomicstk.preprocessing import color_conversion
+import collections
+
+import numpy as np
+
 import histomicstk.utils as utils
+from histomicstk.preprocessing import color_conversion
+from histomicstk.preprocessing.color_deconvolution.find_stain_index import \
+    find_stain_index
+from histomicstk.preprocessing.color_deconvolution.rgb_separate_stains_macenko_pca import \
+    rgb_separate_stains_macenko_pca
+from histomicstk.preprocessing.color_deconvolution.rgb_separate_stains_xu_snmf import \
+    rgb_separate_stains_xu_snmf
+from histomicstk.preprocessing.color_deconvolution.stain_color_map import \
+    stain_color_map
+
 from ._linalg import normalize
 from .complement_stain_matrix import complement_stain_matrix
-import collections
-import numpy as np
-from histomicstk.preprocessing.color_deconvolution.stain_color_map import (
-    stain_color_map)
-from histomicstk.preprocessing.color_deconvolution.find_stain_index import (
-    find_stain_index)
-from histomicstk.preprocessing.color_deconvolution.\
-    rgb_separate_stains_macenko_pca import rgb_separate_stains_macenko_pca
-from histomicstk.preprocessing.color_deconvolution.\
-    rgb_separate_stains_xu_snmf import rgb_separate_stains_xu_snmf
 
 
 def color_deconvolution(im_rgb, w, I_0=None):
@@ -93,8 +96,8 @@ def color_deconvolution(im_rgb, w, I_0=None):
     Stains = StainsFloat.clip(0, 255).astype(np.uint8)
 
     # return
-    Unmixed = collections.namedtuple('Unmixed',
-                                     ['Stains', 'StainsFloat', 'Wc'])
+    Unmixed = collections.namedtuple("Unmixed",
+                                     ["Stains", "StainsFloat", "Wc"])
     Output = Unmixed(Stains, StainsFloat, wc)
 
     return Output
@@ -121,7 +124,7 @@ def _reorder_stains(W, stains=None):
         A re-ordered 3x3 matrix of stain column vectors.
 
     """
-    stains = ['hematoxylin', 'eosin'] if stains is None else stains
+    stains = ["hematoxylin", "eosin"] if stains is None else stains
 
     assert len(stains) == 2, "Only two-stain matrices are supported for now."
 
@@ -140,8 +143,12 @@ def _reorder_stains(W, stains=None):
 
 
 def stain_unmixing_routine(
-        im_rgb, stains=None, stain_unmixing_method='macenko_pca',
-        stain_unmixing_params=None, mask_out=None):
+    im_rgb,
+    stains=None,
+    stain_unmixing_method="macenko_pca",
+    stain_unmixing_params=None,
+    mask_out=None,
+):
     """Perform stain unmixing using the method of choice (wrapper).
 
     Parameters
@@ -192,19 +199,20 @@ def stain_unmixing_routine(
            analysis.  Computerized Medical Imaging and Graphics, 46, 20-29.
 
     """
-    stains = ['hematoxylin', 'eosin'] if stains is None else stains
-    stain_unmixing_params = {} if stain_unmixing_params is None else stain_unmixing_params
+    stains = ["hematoxylin", "eosin"] if stains is None else stains
+    stain_unmixing_params = ({} if stain_unmixing_params is None else
+                             stain_unmixing_params)
 
     stain_unmixing_method = stain_unmixing_method.lower()
 
-    if stain_unmixing_method == 'macenko_pca':
+    if stain_unmixing_method == "macenko_pca":
         stain_deconvolution = rgb_separate_stains_macenko_pca
-        stain_unmixing_params['I_0'] = None
-        stain_unmixing_params['mask_out'] = mask_out
+        stain_unmixing_params["I_0"] = None
+        stain_unmixing_params["mask_out"] = mask_out
 
-    elif stain_unmixing_method == 'xu_snmf':
+    elif stain_unmixing_method == "xu_snmf":
         stain_deconvolution = rgb_separate_stains_xu_snmf
-        stain_unmixing_params['I_0'] = None
+        stain_unmixing_params["I_0"] = None
         assert mask_out is None, "Masking is not yet implemented in xu_snmf."
 
     else:
@@ -216,14 +224,16 @@ def stain_unmixing_routine(
     # If Macenco method, reorder channels in W_target and W_source as desired.
     # This is actually a necessary step in macenko's method since we're
     # not guaranteed the order of the different stains.
-    if stain_unmixing_method == 'macenko_pca':
+    if stain_unmixing_method == "macenko_pca":
         W_source = _reorder_stains(W_source, stains=stains)
 
     return W_source
 
 
-def color_deconvolution_routine(
-        im_rgb, W_source=None, mask_out=None, **kwargs):
+def color_deconvolution_routine(im_rgb,
+                                W_source=None,
+                                mask_out=None,
+                                **kwargs):
     """Unmix stains mixing followed by deconvolution (wrapper).
 
     Parameters
@@ -267,6 +277,6 @@ def color_deconvolution_routine(
     if mask_out is not None:
         for i in range(3):
             Stains[..., i][mask_out] = 255
-            StainsFloat[..., i][mask_out] = 255.
+            StainsFloat[..., i][mask_out] = 255.0
 
     return Stains, StainsFloat, wc

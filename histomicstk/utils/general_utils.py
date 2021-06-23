@@ -4,9 +4,9 @@ Created on Tue Sep 24 00:43:04 2019.
 
 @author: mtageld
 """
-import os
-import logging
 import datetime
+import logging
+import os
 
 # %% ==========================================================================
 
@@ -27,6 +27,7 @@ class Print_and_log:
         if self.keep_log:
             self.logger.info(text)
 
+
 # %% ==========================================================================
 
 
@@ -39,10 +40,10 @@ class Base_HTK_Class:
         more_allowed_attr = [] if more_allowed_attr is None else more_allowed_attr
 
         da = {
-            'verbose': 1,
-            'monitorPrefix': '',
-            'logging_savepath': None,
-            'suppress_warnings': False,
+            "verbose": 1,
+            "monitorPrefix": "",
+            "logging_savepath": None,
+            "suppress_warnings": False,
         }
         default_attr.update(
             (k, v) for k, v in da.items() if k not in default_attr.keys())
@@ -66,7 +67,8 @@ class Base_HTK_Class:
             logger = logging.getLogger()
             self.logname = os.path.join(
                 self.logging_savepath,
-                datetime.datetime.now().strftime("%Y-%m-%d_%H-%M") + '.log')
+                datetime.datetime.now().strftime("%Y-%m-%d_%H-%M") + ".log",
+            )
             logging.basicConfig(filename=self.logname, level=logging.INFO)
         else:
             logger = None
@@ -78,5 +80,6 @@ class Base_HTK_Class:
         self._print2 = self.cpr2._print
         if self.keep_log:
             self._print1("Saving logs to: %s" % self.logname)
+
 
 # %% ==========================================================================

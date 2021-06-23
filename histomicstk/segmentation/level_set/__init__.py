@@ -10,8 +10,7 @@ from .reg_edge import reg_edge
 
 # list out things that are available for public use
 __all__ = (
-
     # functions and classes of this package
-    'chan_vese',
-    'reg_edge',
+    "chan_vese",
+    "reg_edge",
 )

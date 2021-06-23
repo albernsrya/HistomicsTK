@@ -42,8 +42,8 @@ def fit_poisson_mixture(im_input, mu=None, tol=0.1):
 
     # check if intensity values in 'I' are integer type
     if not np.issubdtype(im_input.dtype, np.integer):
-        raise TypeError('Inputs for Poisson mixture modeling should be integer'
-                        ' type')
+        raise TypeError("Inputs for Poisson mixture modeling should be integer"
+                        " type")
 
     # generate a small number for conditioning calculations
     Small = np.finfo(np.float).eps
@@ -51,24 +51,26 @@ def fit_poisson_mixture(im_input, mu=None, tol=0.1):
     # generate histogram of inputs - assume range is 0, 255 (type uint8)
     H = np.histogram(np.ravel(im_input), bins=256, range=(0, 256))
     X = H[1]
-    H = H[0].astype('float') / H[0].sum()
+    H = H[0].astype("float") / H[0].sum()
 
-    if(mu is None):
-        mu = np.dot(X[0: -1], H)
+    if mu is None:
+        mu = np.dot(X[0:-1], H)
 
     # calculate cumulative sum along histogram counts
     Cumulative = np.cumsum(H)
-    CumProd = np.cumsum(np.multiply(X[0: -1], H))
+    CumProd = np.cumsum(np.multiply(X[0:-1], H))
 
     # determine cost at each possible threshold
     P0 = Cumulative
     P0[P0 <= 0] = Small
-    P1 = 1-Cumulative
+    P1 = 1 - Cumulative
     P1[P1 <= 0] = Small
     Mu0 = np.divide(CumProd, P0) + Small
-    Mu1 = np.divide(CumProd[-1]-CumProd, P1) + Small
-    Cost = mu - np.multiply(P0, np.log(P0) + np.multiply(Mu0, np.log(Mu0))) - \
-        np.multiply(P1, np.log(P1) + np.multiply(Mu1, np.log(Mu1)))
+    Mu1 = np.divide(CumProd[-1] - CumProd, P1) + Small
+    Cost = (mu - np.multiply(P0,
+                             np.log(P0) + np.multiply(Mu0, np.log(Mu0))) -
+            np.multiply(P1,
+                        np.log(P1) + np.multiply(Mu1, np.log(Mu1))))
 
     # identify minimum cost threshold
     thresh = X[np.argmin(Cost)]

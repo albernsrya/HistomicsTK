@@ -42,7 +42,7 @@ def compute_fsd_features(im_label, K=128, Fs=6, Delta=8, rprops=None):
     # List of feature names
     feature_list = []
     for i in range(0, Fs):
-        feature_list = np.append(feature_list, 'Shape.FSD' + str(i+1))
+        feature_list = np.append(feature_list, "Shape.FSD" + str(i + 1))
 
     # get Label size x
     sizex = im_label.shape[0]
@@ -60,23 +60,19 @@ def compute_fsd_features(im_label, K=128, Fs=6, Delta=8, rprops=None):
 
     # fourier descriptors, spaced evenly over the interval 1:K/2
     Interval = np.round(
-        np.power(
-            2, np.linspace(0, np.log2(K)-1, Fs+1, endpoint=True)
-        )
-    ).astype(np.uint8)
+        np.power(2, np.linspace(0, np.log2(K) - 1, Fs + 1,
+                                endpoint=True))).astype(np.uint8)
 
     for i in range(numLabels):
         # get bounds of dilated nucleus
-        min_row, max_row, min_col, max_col = \
-            _GetBounds(rprops[i].bbox, Delta, sizex, sizey)
+        min_row, max_row, min_col, max_col = _GetBounds(
+            rprops[i].bbox, Delta, sizex, sizey)
         # grab label mask
-        lmask = (
-            im_label[min_row:max_row, min_col:max_col] == rprops[i].label
-        ).astype(np.bool)
+        lmask = (im_label[min_row:max_row,
+                          min_col:max_col] == rprops[i].label).astype(np.bool)
         # find boundaries
         Bounds = np.argwhere(
-            find_boundaries(lmask, mode="inner").astype(np.uint8) == 1
-        )
+            find_boundaries(lmask, mode="inner").astype(np.uint8) == 1)
         # check length of boundaries
         if len(Bounds) < 2:
             fdata.at[i, :] = 0
@@ -113,22 +109,22 @@ def _InterpolateArcLength(X, Y, K):
     """
 
     # generate spaced points 0, 1/k, 1
-    interval = np.linspace(0, 1, K+1)
+    interval = np.linspace(0, 1, K + 1)
     # get segment lengths
     slens = np.sqrt(np.diff(X)**2 + np.diff(Y)**2)
     # normalize to unit length
     slens = np.true_divide(slens, slens.sum())
     # calculate cumulative length along boundary
-    cumulative = np.zeros(len(slens)+1)
+    cumulative = np.zeros(len(slens) + 1)
     cumulative[1:] = np.cumsum(slens)
     # place points in 'Interval' along boundary
     locations = np.digitize(interval, cumulative)
     # clip to ends
     locations[locations > len(slens)] = len(slens)
     # linear interpolation
-    Lie = (interval - cumulative[locations-1])/slens[locations-1]
-    iX = X[locations-1] + (X[locations]-X[locations-1])*Lie
-    iY = Y[locations-1] + (Y[locations]-Y[locations-1])*Lie
+    Lie = (interval - cumulative[locations - 1]) / slens[locations - 1]
+    iX = X[locations - 1] + (X[locations] - X[locations - 1]) * Lie
+    iY = Y[locations - 1] + (Y[locations] - Y[locations - 1]) * Lie
 
     return iX, iY
 
@@ -164,23 +160,20 @@ def _FSDs(X, Y, K, Intervals):
     """
 
     # check input 'Intervals'
-    if Intervals[0] != 1.:
-        Intervals = np.hstack((1., Intervals))
+    if Intervals[0] != 1.0:
+        Intervals = np.hstack((1.0, Intervals))
     if Intervals[-1] != (K / 2):
         Intervals = np.hstack((Intervals, float(K)))
     # get length of intervals
     L = len(Intervals)
     # initialize F
-    F = np.zeros((L-1, )).astype(float)
+    F = np.zeros((L - 1, )).astype(float)
     # interpolate boundaries
     iX, iY = _InterpolateArcLength(X, Y, K)
     # check if iXY.iX is not empty
     if iX.size:
         # calculate curvature
-        Curvature = np.arctan2(
-            (iY[1:] - iY[:-1]),
-            (iX[1:] - iX[:-1])
-        )
+        Curvature = np.arctan2((iY[1:] - iY[:-1]), (iX[1:] - iX[:-1]))
         # make curvature cumulative
         Curvature = Curvature - Curvature[0]
         # calculate FFT
@@ -189,10 +182,9 @@ def _FSDs(X, Y, K, Intervals):
         fX = fX * fX.conj()
         fX = fX / fX.sum()
         # calculate 'F' values
-        for i in range(L-1):
-            F[i] = np.round(
-                fX[Intervals[i]-1:Intervals[i+1]].sum(), L
-            ).real.astype(float)
+        for i in range(L - 1):
+            F[i] = np.round(fX[Intervals[i] - 1:Intervals[i + 1]].sum(),
+                            L).real.astype(float)
 
     return F
 
@@ -229,8 +221,8 @@ def _GetBounds(bbox, delta, M, N):
     min_row, min_col, max_row, max_col = bbox
 
     min_row_out = max(0, (min_row - delta))
-    max_row_out = min(M-1, (max_row + delta))
+    max_row_out = min(M - 1, (max_row + delta))
     min_col_out = max(0, (min_col - delta))
-    max_col_out = min(N-1, (max_col + delta))
+    max_col_out = min(N - 1, (max_col + delta))
 
     return min_row_out, max_row_out, min_col_out, max_col_out

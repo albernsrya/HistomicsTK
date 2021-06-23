@@ -33,8 +33,8 @@ def eigen(im_hess):
     v2 = np.zeros((sizeX, sizeY, 2))
 
     # compute eigenvalues of H
-    radical = np.sqrt((im_hess[:, :, 0] - im_hess[:, :, 3]) ** 2 +
-                      4 * im_hess[:, :, 1] ** 2)
+    radical = np.sqrt((im_hess[:, :, 0] - im_hess[:, :, 3])**2 +
+                      4 * im_hess[:, :, 1]**2)
     lamda[:, :, 0] = (im_hess[:, :, 0] + im_hess[:, :, 3] + radical) / 2
     lamda[:, :, 1] = (im_hess[:, :, 0] + im_hess[:, :, 3] - radical) / 2
 
@@ -44,7 +44,7 @@ def eigen(im_hess):
     norms = np.sqrt(v1[:, :, 0]**2 + v1[:, :, 1]**2)
 
     # normalize eigenvectors of H
-    with np.errstate(divide='ignore', invalid='ignore'):
+    with np.errstate(divide="ignore", invalid="ignore"):
         v1[:, :, 0] = np.true_divide(v1[:, :, 0], norms)
         v1[:, :, 1] = np.true_divide(v1[:, :, 1], norms)
         # check -inf inf NaN
@@ -57,14 +57,14 @@ def eigen(im_hess):
     swap = np.where(abs(lamda[:, :, 0]) > abs(lamda[:, :, 1]))
 
     # swap between lamda[:, :, 0] and lamda[:, :, 1]
-    lamda[:, :, 0][swap], lamda[:, :, 1][swap] = \
-        lamda[:, :, 1][swap], lamda[:, :, 0][swap]
+    lamda[:, :, 0][swap], lamda[:, :, 1][swap] = (
+        lamda[:, :, 1][swap],
+        lamda[:, :, 0][swap],
+    )
 
     # swap between v1 and v2
-    v1[:, :, 0][swap], v2[:, :, 0][swap] = \
-        v2[:, :, 0][swap], v1[:, :, 0][swap]
+    v1[:, :, 0][swap], v2[:, :, 0][swap] = v2[:, :, 0][swap], v1[:, :, 0][swap]
 
-    v1[:, :, 1][swap], v2[:, :, 1][swap] = \
-        v2[:, :, 1][swap], v1[:, :, 1][swap]
+    v1[:, :, 1][swap], v2[:, :, 1][swap] = v2[:, :, 1][swap], v1[:, :, 1][swap]
 
     return lamda, v1, v2

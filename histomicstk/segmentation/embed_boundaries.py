@@ -66,8 +66,7 @@ def embed_boundaries(im_input, im_perim, color=None):
     Blue[im_perim > 0] = color[2]
 
     # generate output image
-    im_embed = np.dstack((Red[:, :, np.newaxis],
-                          Green[:, :, np.newaxis],
+    im_embed = np.dstack((Red[:, :, np.newaxis], Green[:, :, np.newaxis],
                           Blue[:, :, np.newaxis])).astype(np.uint8)
 
     # concatenate channels to form output

@@ -1,14 +1,19 @@
 """Placeholder."""
+import numpy
+
 import histomicstk.utils as utils
+
 from . import _linalg as linalg
 from .complement_stain_matrix import complement_stain_matrix
 
-import numpy
-
 
 def separate_stains_macenko_pca(
-        im_sda, minimum_magnitude=16, min_angle_percentile=0.01,
-        max_angle_percentile=0.99, mask_out=None):
+    im_sda,
+    minimum_magnitude=16,
+    min_angle_percentile=0.01,
+    max_angle_percentile=0.99,
+    mask_out=None,
+):
     """Compute the stain matrix for color deconvolution with the Macenko method.
 
     For a two-stain image or matrix in SDA space, this method works by

@@ -3,7 +3,7 @@ import scipy.ndimage as ndi
 from skimage import morphology
 
 
-def glog(im_input, alpha=1, range=None, theta=np.pi/4, tau=0.6, eps=0.6):
+def glog(im_input, alpha=1, range=None, theta=np.pi / 4, tau=0.6, eps=0.6):
     """Performs generalized Laplacian of Gaussian blob detection.
 
     Parameters
@@ -41,7 +41,9 @@ def glog(im_input, alpha=1, range=None, theta=np.pi/4, tau=0.6, eps=0.6):
        Transactions on Cybernetics, vol.43,no.6,pp.1719-33, 2013.
 
     """
-    range = np.linspace(1.5, 3, int(np.round((3 - 1.5) / 0.2)) + 1) if range is None else range
+    range = (np.linspace(1.5, 3,
+                         int(np.round((3 - 1.5) / 0.2)) +
+                         1) if range is None else range)
 
     # initialize sigma
     Sigma = np.exp(range)
@@ -53,13 +55,16 @@ def glog(im_input, alpha=1, range=None, theta=np.pi/4, tau=0.6, eps=0.6):
     Min = np.zeros((len(Sigma), 1))
     Max = np.zeros((len(Sigma), 1))
     for i, s in enumerate(Sigma):
-        Response = s**2 * ndi.filters.gaussian_laplace(im_input, s, output=None,
-                                                       mode='constant',
-                                                       cval=0.0)
+        Response = s**2 * ndi.filters.gaussian_laplace(
+            im_input, s, output=None, mode="constant", cval=0.0)
         Min[i] = Response.min()
         Max[i] = Response.max()
-        Bins.append(np.arange(0.01 * np.floor(Min[i] / 0.01),
-                    0.01 * np.ceil(Max[i] / 0.01) + 0.01, 0.01))
+        Bins.append(
+            np.arange(
+                0.01 * np.floor(Min[i] / 0.01),
+                0.01 * np.ceil(Max[i] / 0.01) + 0.01,
+                0.01,
+            ))
         Hist = np.histogram(Response, Bins[i])
         H.append(Hist[0])
         if Max[i] > l_g:
@@ -75,7 +80,7 @@ def glog(im_input, alpha=1, range=None, theta=np.pi/4, tau=0.6, eps=0.6):
     Index = np.argmax(Zeta)
 
     # define range for SigmaX
-    XRange = range(max(Index-2, 0), min(len(range), Index + 2) + 1)
+    XRange = range(max(Index - 2, 0), min(len(range), Index + 2) + 1)
     SigmaX = np.exp(range[XRange])
 
     # define rotation angles
@@ -89,12 +94,15 @@ def glog(im_input, alpha=1, range=None, theta=np.pi/4, tau=0.6, eps=0.6):
         for Sy in SigmaY:
             for Th in Thetas:
                 Kernel = glogkernel(Sx, Sy, Th)
-                Kernel *= (1 + np.log(Sx) ** alpha) * (1 + np.log(Sy) ** alpha)
-                Rsum += ndi.convolve(im_input, Kernel, mode='constant', cval=0.0)
+                Kernel *= (1 + np.log(Sx)**alpha) * (1 + np.log(Sy)**alpha)
+                Rsum += ndi.convolve(im_input,
+                                     Kernel,
+                                     mode="constant",
+                                     cval=0.0)
                 print(Sx, Sy, Th)
         Kernel = glogkernel(Sx, Sx, 0)
-        Kernel *= (1 + np.log(Sx) ** alpha) * (1 + np.log(Sx) ** alpha)
-        Rsum += ndi.convolve(im_input, Kernel, mode='constant', cval=0.0)
+        Kernel *= (1 + np.log(Sx)**alpha) * (1 + np.log(Sx)**alpha)
+        Rsum += ndi.convolve(im_input, Kernel, mode="constant", cval=0.0)
         print(Sx, Sx, 0)
 
     # detect local maxima
@@ -108,16 +116,19 @@ def glog(im_input, alpha=1, range=None, theta=np.pi/4, tau=0.6, eps=0.6):
 def glogkernel(sigma_x, sigma_y, theta):
 
     N = np.ceil(2 * 3 * sigma_x)
-    X, Y = np.meshgrid(np.linspace(0, N, int(N + 1)) - N / 2,
-                       np.linspace(0, N, int(N + 1)) - N / 2)
-    a = np.cos(theta) ** 2 / (2 * sigma_x ** 2) + \
-        np.sin(theta) ** 2 / (2 * sigma_y ** 2)
-    b = -np.sin(2 * theta) / (4 * sigma_x ** 2) + \
-        np.sin(2 * theta) / (4 * sigma_y ** 2)
-    c = np.sin(theta) ** 2 / (2 * sigma_x ** 2) + \
-        np.cos(theta) ** 2 / (2 * sigma_y ** 2)
-    D2Gxx = ((2*a*X + 2*b*Y)**2 - 2*a) * np.exp(-(a*X**2 + 2*b*X*Y + c*Y**2))
-    D2Gyy = ((2*b*X + 2*c*Y)**2 - 2*c) * np.exp(-(a*X**2 + 2*b*X*Y + c*Y**2))
-    Gaussian = np.exp(-(a*X**2 + 2*b*X*Y + c*Y**2))
+    X, Y = np.meshgrid(
+        np.linspace(0, N, int(N + 1)) - N / 2,
+        np.linspace(0, N, int(N + 1)) - N / 2)
+    a = np.cos(theta)**2 / (2 * sigma_x**2) + np.sin(theta)**2 / (2 *
+                                                                  sigma_y**2)
+    b = -np.sin(2 * theta) / (4 * sigma_x**2) + np.sin(
+        2 * theta) / (4 * sigma_y**2)
+    c = np.sin(theta)**2 / (2 * sigma_x**2) + np.cos(theta)**2 / (2 *
+                                                                  sigma_y**2)
+    D2Gxx = ((2 * a * X + 2 * b * Y)**2 -
+             2 * a) * np.exp(-(a * X**2 + 2 * b * X * Y + c * Y**2))
+    D2Gyy = ((2 * b * X + 2 * c * Y)**2 -
+             2 * c) * np.exp(-(a * X**2 + 2 * b * X * Y + c * Y**2))
+    Gaussian = np.exp(-(a * X**2 + 2 * b * X * Y + c * Y**2))
     Kernel = (D2Gxx + D2Gyy) / np.sum(Gaussian.flatten())
     return Kernel

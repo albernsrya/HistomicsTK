@@ -4,13 +4,18 @@ Created on Tue Oct  1 01:38:16 2019.
 
 @author: mtageld
 """
-from histomicstk.annotations_and_masks.annotation_and_mask_utils import (
-    delete_annotations_in_slide)
+from histomicstk.annotations_and_masks.annotation_and_mask_utils import \
+    delete_annotations_in_slide
 
 
 def cellularity_detection_workflow(
-        gc, cdo, slide_id, monitorPrefix='',
-        destination_folder_id=None, keep_existing_annotations=False):
+    gc,
+    cdo,
+    slide_id,
+    monitorPrefix="",
+    destination_folder_id=None,
+    keep_existing_annotations=False,
+):
     """Run cellularity detection for single slide.
 
     The cellularity detection algorithm can either be
@@ -44,7 +49,7 @@ def cellularity_detection_workflow(
         resp = gc.post(
             "/item/%s/copy?folderId=%s&copyAnnotations=%s" %
             (slide_id, destination_folder_id, keep_existing_annotations))
-        slide_id = resp['_id']
+        slide_id = resp["_id"]
 
     elif not keep_existing_annotations:
         cdo._print1("%s: deleting existing annotations" % monitorPrefix)
@@ -55,5 +60,6 @@ def cellularity_detection_workflow(
     cdo.run()
 
     return slide_id
+
 
 # %%===========================================================================

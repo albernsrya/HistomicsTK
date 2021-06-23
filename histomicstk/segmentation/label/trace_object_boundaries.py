@@ -4,12 +4,16 @@ from skimage.measure import regionprops
 from ._trace_object_boundaries_cython import _trace_object_boundaries_cython
 
 
-def trace_object_boundaries(im_label,
-                            conn=4, trace_all=False,
-                            x_start=None, y_start=None,
-                            max_length=None,
-                            simplify_colinear_spurs=True,
-                            eps_colinear_area=0.01):
+def trace_object_boundaries(
+    im_label,
+    conn=4,
+    trace_all=False,
+    x_start=None,
+    y_start=None,
+    max_length=None,
+    simplify_colinear_spurs=True,
+    eps_colinear_area=0.01,
+):
     """Performs exterior boundary tracing of one or more objects in a label
     mask. If a starting point is not provided then a raster scan will be performed
     to identify the starting pixel.
@@ -65,7 +69,7 @@ def trace_object_boundaries(im_label,
     """
 
     if max_length is None:
-        max_length = float('inf')
+        max_length = float("inf")
 
     X = []
     Y = []
@@ -84,29 +88,29 @@ def trace_object_boundaries(im_label,
             min_row, min_col, max_row, max_col = rprops[i].bbox
 
             # grab label mask
-            lmask = (
-                im_label[
-                    min_row:max_row, min_col:max_col
-                ] == rprops[i].label
-            ).astype(np.bool)
+            lmask = (im_label[min_row:max_row,
+                              min_col:max_col] == rprops[i].label).astype(
+                                  np.bool)
 
             mrows = max_row - min_row + 2
             mcols = max_col - min_col + 2
 
             mask = np.zeros((mrows, mcols))
-            mask[1:mrows-1, 1:mcols-1] = lmask
+            mask[1:mrows - 1, 1:mcols - 1] = lmask
 
             by, bx = _trace_object_boundaries_cython(
-                np.ascontiguousarray(
-                    mask, dtype=np.int), conn, x_start, y_start, max_length
+                np.ascontiguousarray(mask, dtype=np.int),
+                conn,
+                x_start,
+                y_start,
+                max_length,
             )
 
             bx = bx + min_row - 1
             by = by + min_col - 1
 
             if simplify_colinear_spurs:
-                bx, by = _remove_thin_colinear_spurs(bx, by,
-                                                     eps_colinear_area)
+                bx, by = _remove_thin_colinear_spurs(bx, by, eps_colinear_area)
 
             if len(bx) > 0:
                 X.append(bx)
@@ -120,8 +124,8 @@ def trace_object_boundaries(im_label,
         if numLabels > 1:
             raise ValueError("Number of labels should be 1 !!")
 
-        if (x_start is None and y_start is not None) | \
-                (x_start is not None and y_start is None):
+        if (x_start is None and y_start is not None) | (x_start is not None
+                                                        and y_start is None):
             raise ValueError("x_start or y_start is not defined !!")
 
         if x_start is None and y_start is None:
@@ -129,13 +133,15 @@ def trace_object_boundaries(im_label,
             y_start = -1
 
         by, bx = _trace_object_boundaries_cython(
-            np.ascontiguousarray(
-                im_label, dtype=np.int), conn, x_start, y_start, max_length
+            np.ascontiguousarray(im_label, dtype=np.int),
+            conn,
+            x_start,
+            y_start,
+            max_length,
         )
 
         if simplify_colinear_spurs:
-            bx, by = _remove_thin_colinear_spurs(bx, by,
-                                                 eps_colinear_area)
+            bx, by = _remove_thin_colinear_spurs(bx, by, eps_colinear_area)
 
         if len(bx) > 0:
             X.append(bx)
@@ -145,8 +151,7 @@ def trace_object_boundaries(im_label,
 
 
 def _remove_thin_colinear_spurs(px, py, eps_colinear_area=0):
-    """Simplifies the given list of points by removing colinear spurs
-    """
+    """Simplifies the given list of points by removing colinear spurs"""
 
     keep = []  # indices of points to keep
 
@@ -169,14 +174,13 @@ def _remove_thin_colinear_spurs(px, py, eps_colinear_area=0):
 
         # compute area of triangle formed by triplet
         area = 0.5 * np.linalg.det(
-            np.array([[x1, x2, x3], [y1, y2, y3], [1, 1, 1]])
-        )
+            np.array([[x1, x2, x3], [y1, y2, y3], [1, 1, 1]]))
 
         # if area > cutoff, add testpos to keep and move anchor to testpos
         if abs(area) > eps_colinear_area:
 
             keep.append(testpos)  # add testpos to keep list
-            anchor = testpos      # make testpos the next anchor point
+            anchor = testpos  # make testpos the next anchor point
             testpos += 1
 
         else:

@@ -17,9 +17,11 @@
 ###############################################################################
 
 import os
+
 import numpy as np
-from histomicstk.filters.shape import clog, cdog
 from skimage.feature import peak_local_max
+
+from histomicstk.filters.shape import cdog, clog
 
 from .datastore import datastore
 
@@ -49,7 +51,9 @@ def assert_array_almost_equal_neighborhood_lines(im, gt, decimal=4):
             rolled_gt = np.roll(gt, s, 1)
             abs_array = np.abs(rolled_gt - rolled_image)
             min_array = np.minimum(min_array, abs_array)
-    np.testing.assert_array_almost_equal(min_array, np.zeros_like(im), decimal=decimal)
+    np.testing.assert_array_almost_equal(min_array,
+                                         np.zeros_like(im),
+                                         decimal=decimal)
 
 
 def _sort_list(input_list):
@@ -64,67 +68,82 @@ def compare_maxima(input_im, gtruth_im, min_distance=10, threshold_abs=20):
     on both images that are passed as arguments, and asserts if the resulting maxima arrays
     returned by this function match.
     """
-    gtruth_coordinates = _sort_list(peak_local_max(gtruth_im, min_distance=min_distance,
-                                                   threshold_abs=threshold_abs))
-    input_coordinates = _sort_list(peak_local_max(input_im, min_distance=min_distance,
-                                                  threshold_abs=threshold_abs))
+    gtruth_coordinates = _sort_list(
+        peak_local_max(gtruth_im,
+                       min_distance=min_distance,
+                       threshold_abs=threshold_abs))
+    input_coordinates = _sort_list(
+        peak_local_max(input_im,
+                       min_distance=min_distance,
+                       threshold_abs=threshold_abs))
     np.testing.assert_array_equal(gtruth_coordinates, input_coordinates)
 
 
 class TestBlobDetectionFilters:
-
     def test_clog(self):
 
         im_nuclei_stain_data = np.load(
-            datastore.fetch('Easy1_nuclei_stain.npz'))
-        im_nuclei_stain = im_nuclei_stain_data['Easy1_nuclei_stain']
+            datastore.fetch("Easy1_nuclei_stain.npz"))
+        im_nuclei_stain = im_nuclei_stain_data["Easy1_nuclei_stain"]
 
         im_nuclei_fgnd_mask_data = np.load(
-            datastore.fetch('Easy1_nuclei_fgnd_mask.npz'))
-        im_nuclei_fgnd_mask = im_nuclei_fgnd_mask_data['Easy1_nuclei_fgnd_mask']
+            datastore.fetch("Easy1_nuclei_fgnd_mask.npz"))
+        im_nuclei_fgnd_mask = im_nuclei_fgnd_mask_data[
+            "Easy1_nuclei_fgnd_mask"]
 
         sigma_min = 10.0 / np.sqrt(2.0)
         sigma_max = 40.0 / np.sqrt(2.0)
 
         im_log_max, im_sigma_max = clog(
-            im_input=im_nuclei_stain, im_mask=im_nuclei_fgnd_mask,
-            sigma_min=sigma_min, sigma_max=sigma_max)
+            im_input=im_nuclei_stain,
+            im_mask=im_nuclei_fgnd_mask,
+            sigma_min=sigma_min,
+            sigma_max=sigma_max,
+        )
 
-        im_log_max_gtruth_data = np.load(os.path.join(datastore.fetch(
-            'Easy1_clog_max.npz')))
-        im_log_max_gtruth = im_log_max_gtruth_data['Easy1_clog_max']
-        assert_array_almost_equal_neighborhood_lines(im_log_max, im_log_max_gtruth, decimal=4)
+        im_log_max_gtruth_data = np.load(
+            os.path.join(datastore.fetch("Easy1_clog_max.npz")))
+        im_log_max_gtruth = im_log_max_gtruth_data["Easy1_clog_max"]
+        assert_array_almost_equal_neighborhood_lines(im_log_max,
+                                                     im_log_max_gtruth,
+                                                     decimal=4)
         compare_maxima(im_log_max, im_log_max_gtruth)
 
-        im_sigma_max_gtruth_data = np.load(os.path.join(datastore.fetch(
-            'Easy1_clog_sigma_max.npz')))
-        im_sigma_max_gtruth = im_sigma_max_gtruth_data['Easy1_clog_sigma_max']
-        assert_array_almost_equal_neighborhood_lines(im_sigma_max, im_sigma_max_gtruth, decimal=4)
+        im_sigma_max_gtruth_data = np.load(
+            os.path.join(datastore.fetch("Easy1_clog_sigma_max.npz")))
+        im_sigma_max_gtruth = im_sigma_max_gtruth_data["Easy1_clog_sigma_max"]
+        assert_array_almost_equal_neighborhood_lines(im_sigma_max,
+                                                     im_sigma_max_gtruth,
+                                                     decimal=4)
 
     def test_cdog(self):
 
         im_nuclei_stain_data = np.load(
-            os.path.join(datastore.fetch('Easy1_nuclei_stain.npz')))
-        im_nuclei_stain = im_nuclei_stain_data['Easy1_nuclei_stain']
+            os.path.join(datastore.fetch("Easy1_nuclei_stain.npz")))
+        im_nuclei_stain = im_nuclei_stain_data["Easy1_nuclei_stain"]
 
         im_nuclei_fgnd_mask_data = np.load(
-            os.path.join(datastore.fetch('Easy1_nuclei_fgnd_mask.npz')))
-        im_nuclei_fgnd_mask = im_nuclei_fgnd_mask_data['Easy1_nuclei_fgnd_mask']
+            os.path.join(datastore.fetch("Easy1_nuclei_fgnd_mask.npz")))
+        im_nuclei_fgnd_mask = im_nuclei_fgnd_mask_data[
+            "Easy1_nuclei_fgnd_mask"]
 
         sigma_min = 10.0 / np.sqrt(2.0)
         sigma_max = 40.0 / np.sqrt(2.0)
 
-        im_dog_max, im_sigma_max = cdog(im_nuclei_stain,
-                                        im_nuclei_fgnd_mask,
+        im_dog_max, im_sigma_max = cdog(im_nuclei_stain, im_nuclei_fgnd_mask,
                                         sigma_min, sigma_max)
 
         im_dog_max_gtruth_data = np.load(
-            os.path.join(datastore.fetch('Easy1_cdog_max.npz')))
-        im_dog_max_gtruth = im_dog_max_gtruth_data['Easy1_cdog_max']
-        assert_array_almost_equal_neighborhood_lines(im_dog_max, im_dog_max_gtruth, decimal=4)
+            os.path.join(datastore.fetch("Easy1_cdog_max.npz")))
+        im_dog_max_gtruth = im_dog_max_gtruth_data["Easy1_cdog_max"]
+        assert_array_almost_equal_neighborhood_lines(im_dog_max,
+                                                     im_dog_max_gtruth,
+                                                     decimal=4)
         compare_maxima(im_dog_max, im_dog_max_gtruth)
 
         im_sigma_max_gtruth_data = np.load(
-            os.path.join(datastore.fetch('Easy1_cdog_sigma_max.npz')))
-        im_sigma_max_gtruth = im_sigma_max_gtruth_data['Easy1_cdog_sigma_max']
-        assert_array_almost_equal_neighborhood_lines(im_sigma_max, im_sigma_max_gtruth, decimal=4)
+            os.path.join(datastore.fetch("Easy1_cdog_sigma_max.npz")))
+        im_sigma_max_gtruth = im_sigma_max_gtruth_data["Easy1_cdog_sigma_max"]
+        assert_array_almost_equal_neighborhood_lines(im_sigma_max,
+                                                     im_sigma_max_gtruth,
+                                                     decimal=4)

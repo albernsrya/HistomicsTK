@@ -1,15 +1,22 @@
 import dask
 import dask.distributed
 import large_image
-import PIL.Image
 import numpy as np
+import PIL.Image
 
 from .simple_mask import simple_mask
 
 
-def sample_pixels(slide_path, sample_fraction=None, magnification=None,
-                  tissue_seg_mag=1.25, min_coverage=0.1, background=False,
-                  sample_approximate_total=None, tile_grouping=256):
+def sample_pixels(
+    slide_path,
+    sample_fraction=None,
+    magnification=None,
+    tissue_seg_mag=1.25,
+    min_coverage=0.1,
+    background=False,
+    sample_approximate_total=None,
+    tile_grouping=256,
+):
     """Generates a sampling of pixels from a whole-slide image.
 
     Useful for generating statistics or Reinhard color-normalization or
@@ -56,20 +63,18 @@ def sample_pixels(slide_path, sample_fraction=None, magnification=None,
     """
 
     if (sample_fraction is None) == (sample_approximate_total is None):
-        raise ValueError('Exactly one of sample_fraction and ' +
-                         'sample_approximate_total must have a value.')
+        raise ValueError("Exactly one of sample_fraction and " +
+                         "sample_approximate_total must have a value.")
 
     ts = large_image.getTileSource(slide_path)
 
     if magnification is None:
-        magnification = ts.getMetadata()['magnification']
+        magnification = ts.getMetadata()["magnification"]
 
     # get entire whole-slide image at low resolution
-    scale_lres = {'magnification': tissue_seg_mag}
-    im_lres, _ = ts.getRegion(
-        format=large_image.tilesource.TILE_FORMAT_NUMPY,
-        scale=scale_lres
-    )
+    scale_lres = {"magnification": tissue_seg_mag}
+    im_lres, _ = ts.getRegion(format=large_image.tilesource.TILE_FORMAT_NUMPY,
+                              scale=scale_lres)
     im_lres = im_lres[:, :, :3]
 
     # compute foreground mask of whole-slide image at low-res.
@@ -78,67 +83,85 @@ def sample_pixels(slide_path, sample_fraction=None, magnification=None,
 
     if sample_approximate_total is not None:
         scale_ratio = float(magnification) / tissue_seg_mag
-        total_fgnd_pixels = np.count_nonzero(im_fgnd_mask_lres) * scale_ratio ** 2
+        total_fgnd_pixels = np.count_nonzero(
+            im_fgnd_mask_lres) * scale_ratio**2
         sample_fraction = sample_approximate_total / total_fgnd_pixels
 
     # broadcasting fgnd mask to all dask workers
     try:
         c = dask.distributed.get_client()
 
-        [im_fgnd_mask_lres] = c.scatter([im_fgnd_mask_lres],
-                                        broadcast=True)
+        [im_fgnd_mask_lres] = c.scatter([im_fgnd_mask_lres], broadcast=True)
     except ValueError:
         pass
 
     # generate sample pixels
     sample_pixels = []
 
-    iter_args = dict(scale=dict(magnification=magnification),
-                     format=large_image.tilesource.TILE_FORMAT_NUMPY)
+    iter_args = dict(
+        scale=dict(magnification=magnification),
+        format=large_image.tilesource.TILE_FORMAT_NUMPY,
+    )
 
-    total_tiles = ts.getSingleTile(**iter_args)['iterator_range']['position']
+    total_tiles = ts.getSingleTile(**iter_args)["iterator_range"]["position"]
 
     for position in range(0, total_tiles, tile_grouping):
 
-        sample_pixels.append(dask.delayed(_sample_pixels_tile)(
-            slide_path, iter_args,
-            (position, min(tile_grouping, total_tiles - position)),
-            sample_fraction, tissue_seg_mag, min_coverage,
-            im_fgnd_mask_lres))
+        sample_pixels.append(
+            dask.delayed(_sample_pixels_tile)(
+                slide_path,
+                iter_args,
+                (position, min(tile_grouping, total_tiles - position)),
+                sample_fraction,
+                tissue_seg_mag,
+                min_coverage,
+                im_fgnd_mask_lres,
+            ))
 
     # concatenate pixel values in list
     if sample_pixels:
-        sample_pixels = (dask.delayed(np.concatenate)(sample_pixels, 0)
-                         .compute())
+        sample_pixels = dask.delayed(np.concatenate)(sample_pixels,
+                                                     0).compute()
     else:
         print("Sampling could not identify any foreground regions.")
 
     return sample_pixels
 
 
-def _sample_pixels_tile(slide_path, iter_args, positions, sample_fraction,
-                        tissue_seg_mag, min_coverage, im_fgnd_mask_lres):
+def _sample_pixels_tile(
+    slide_path,
+    iter_args,
+    positions,
+    sample_fraction,
+    tissue_seg_mag,
+    min_coverage,
+    im_fgnd_mask_lres,
+):
     start_position, position_count = positions
     sample_pixels = [np.empty((0, 3))]
     ts = large_image.getTileSource(slide_path)
     for position in range(start_position, start_position + position_count):
         tile = ts.getSingleTile(tile_position=position, **iter_args)
         # get current region in base_pixels
-        rgn_hres = {'left': tile['gx'], 'top': tile['gy'],
-                    'right': tile['gx'] + tile['gwidth'],
-                    'bottom': tile['gy'] + tile['gheight'],
-                    'units': 'base_pixels'}
+        rgn_hres = {
+            "left": tile["gx"],
+            "top": tile["gy"],
+            "right": tile["gx"] + tile["gwidth"],
+            "bottom": tile["gy"] + tile["gheight"],
+            "units": "base_pixels",
+        }
 
         # get foreground mask for current tile at low resolution
-        rgn_lres = ts.convertRegionScale(rgn_hres,
-                                         targetScale={'magnification':
-                                                      tissue_seg_mag},
-                                         targetUnits='mag_pixels')
+        rgn_lres = ts.convertRegionScale(
+            rgn_hres,
+            targetScale={"magnification": tissue_seg_mag},
+            targetUnits="mag_pixels",
+        )
 
-        top = np.int(rgn_lres['top'])
-        bottom = np.int(rgn_lres['bottom'])
-        left = np.int(rgn_lres['left'])
-        right = np.int(rgn_lres['right'])
+        top = np.int(rgn_lres["top"])
+        bottom = np.int(rgn_lres["bottom"])
+        left = np.int(rgn_lres["left"])
+        right = np.int(rgn_lres["right"])
 
         tile_fgnd_mask_lres = im_fgnd_mask_lres[top:bottom, left:right]
 
@@ -149,13 +172,12 @@ def _sample_pixels_tile(slide_path, iter_args, positions, sample_fraction,
             continue
 
         # get current tile image
-        im_tile = tile['tile'][:, :, :3]
+        im_tile = tile["tile"][:, :, :3]
 
         # get tile foreground mask at resolution of current tile
-        tile_fgnd_mask = np.array(PIL.Image.fromarray(tile_fgnd_mask_lres).resize(
-            im_tile.shape[:2],
-            resample=PIL.Image.NEAREST
-        ))
+        tile_fgnd_mask = np.array(
+            PIL.Image.fromarray(tile_fgnd_mask_lres).resize(
+                im_tile.shape[:2], resample=PIL.Image.NEAREST))
 
         # generate linear indices of sample pixels in fgnd mask
         nz_ind = np.nonzero(tile_fgnd_mask.flatten())[0]

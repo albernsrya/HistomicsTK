@@ -1,4 +1,5 @@
 import collections
+
 import numpy as np
 import scipy.signal as signal
 
@@ -36,21 +37,21 @@ def gaussian_grad(im_input, sigma):
     y -= np.ceil(2 * 3 * sigma) / 2
     x = np.reshape(x, (1, x.size))  # reshape to 2D row and column vectors
     y = np.reshape(y, (y.size, 1))
-    xGx = 2 * x / (sigma ** 2) * np.exp(-x ** 2 / (2 * sigma ** 2)) \
-        / (sigma * (2 * np.pi) ** 0.5)
-    yGx = np.exp(-y**2 / (2 * sigma ** 2)) / ((2 * np.pi) ** 0.5 * sigma)
-    xGy = np.exp(-x**2 / (2 * sigma ** 2)) / ((2 * np.pi) ** 0.5 * sigma)
-    yGy = 2 * y / (sigma ** 2) * np.exp(-y ** 2 / (2 * sigma ** 2)) \
-        / (sigma * (2 * np.pi) ** 0.5)
+    xGx = (2 * x / (sigma**2) * np.exp(-(x**2) / (2 * sigma**2)) /
+           (sigma * (2 * np.pi)**0.5))
+    yGx = np.exp(-(y**2) / (2 * sigma**2)) / ((2 * np.pi)**0.5 * sigma)
+    xGy = np.exp(-(x**2) / (2 * sigma**2)) / ((2 * np.pi)**0.5 * sigma)
+    yGy = (2 * y / (sigma**2) * np.exp(-(y**2) / (2 * sigma**2)) /
+           (sigma * (2 * np.pi)**0.5))
 
     # smoothed gradients of input image
-    dx = signal.convolve2d(im_input, xGx, mode='same')
-    dx = signal.convolve2d(dx, yGx, mode='same')
-    dy = signal.convolve2d(im_input, xGy, mode='same')
-    dy = signal.convolve2d(dy, yGy, mode='same')
+    dx = signal.convolve2d(im_input, xGx, mode="same")
+    dx = signal.convolve2d(dx, yGx, mode="same")
+    dy = signal.convolve2d(im_input, xGy, mode="same")
+    dy = signal.convolve2d(dy, yGy, mode="same")
 
     # format output
-    Output = collections.namedtuple('Output', ['dx', 'dy'])
+    Output = collections.namedtuple("Output", ["dx", "dy"])
     Gradients = Output(dx, dy)
 
     return Gradients

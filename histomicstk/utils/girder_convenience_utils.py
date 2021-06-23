@@ -3,13 +3,16 @@ Created on Thu Dec 12 13:19:18 2019
 
 @author: tageldim
 """
+import json
 # import os
 import os
 
 import girder_client
-import json
-from histomicstk.workflows.workflow_runner import Workflow_runner, \
-    Slide_iterator, Annotation_iterator
+
+from histomicstk.workflows.workflow_runner import (Annotation_iterator,
+                                                   Slide_iterator,
+                                                   Workflow_runner)
+
 # import warnings
 # warnings.simplefilter('once', UserWarning)
 
@@ -63,19 +66,24 @@ def get_absolute_girder_folderpath(gc, folder_id=None, folder_info=None):
     """
     assert any([j is not None for j in (folder_id, folder_info)])
     if folder_id is not None:
-        folder_info = gc.get('/folder/%s' % folder_id)
-    fpath = gc.get('/folder/%s/rootpath' % folder_info['_id'])
-    fpath = "/".join([
-        j['object']['name'] for j in fpath
-        if j['object']['_modelType'] == 'folder'
-    ]) + "/" + folder_info['name'] + "/"
+        folder_info = gc.get("/folder/%s" % folder_id)
+    fpath = gc.get("/folder/%s/rootpath" % folder_info["_id"])
+    fpath = ("/".join([
+        j["object"]["name"]
+        for j in fpath if j["object"]["_modelType"] == "folder"
+    ]) + "/" + folder_info["name"] + "/")
     return fpath
 
 
 def update_permissions_for_annotation(
-        gc, annotation_id=None, annotation=None,
-        groups_to_add=None, replace_original_groups=True,
-        users_to_add=None, replace_original_users=True):
+    gc,
+    annotation_id=None,
+    annotation=None,
+    groups_to_add=None,
+    replace_original_groups=True,
+    users_to_add=None,
+    replace_original_users=True,
+):
     """Update permissions for a single annotation.
 
     Parameters
@@ -115,46 +123,49 @@ def update_permissions_for_annotation(
     users_to_add = [] if users_to_add is None else users_to_add
 
     if annotation is not None:
-        annotation_id = annotation['_id']
+        annotation_id = annotation["_id"]
     elif annotation_id is None:
         raise Exception(
             "You must provide either the annotation or its girder id.")
 
     # get current permissions
-    current = gc.get('/annotation/%s/access' % annotation_id)
+    current = gc.get("/annotation/%s/access" % annotation_id)
 
     # add or replace as needed
     if replace_original_groups:
-        current['groups'] = []
+        current["groups"] = []
         current_group_ids = []
     else:
-        current_group_ids = [j['id'] for j in current['groups']]
+        current_group_ids = [j["id"] for j in current["groups"]]
 
     if replace_original_users:
-        current['users'] = []
+        current["users"] = []
         current_user_ids = []
     else:
-        current_user_ids = [j['id'] for j in current['users']]
+        current_user_ids = [j["id"] for j in current["users"]]
 
     for group in groups_to_add:
-        if group['id'] not in current_group_ids:
-            current['groups'].append(group)
+        if group["id"] not in current_group_ids:
+            current["groups"].append(group)
 
     for user in users_to_add:
-        if user['id'] not in current_user_ids:
-            current['users'].append(user)
+        if user["id"] not in current_user_ids:
+            current["users"].append(user)
 
     # now update accordingly
     # BAD WAY!! -- do NOT do this!
     # return gc.put('/annotation/%s/access?access=%s' % (
     #        annotation_id, json.dumps(current)))
     # PROPER WAY
-    return gc.put('/annotation/%s/access' % annotation_id, data={
-        'access': json.dumps(current)})
+    return gc.put("/annotation/%s/access" % annotation_id,
+                  data={"access": json.dumps(current)})
 
 
-def update_permissions_for_annotations_in_slide(
-        gc, slide_id, verbose=0, monitorPrefix='', **kwargs):
+def update_permissions_for_annotations_in_slide(gc,
+                                                slide_id,
+                                                verbose=0,
+                                                monitorPrefix="",
+                                                **kwargs):
     """Update permissions for all annotations in a slide.
 
     Parameters
@@ -177,16 +188,22 @@ def update_permissions_for_annotations_in_slide(
 
     """
     anniter = Annotation_iterator(
-        gc=gc, slide_id=slide_id,
+        gc=gc,
+        slide_id=slide_id,
         callback=update_permissions_for_annotation,
         callback_kwargs=kwargs,
-        verbose=verbose, monitorPrefix=monitorPrefix)
+        verbose=verbose,
+        monitorPrefix=monitorPrefix,
+    )
     return anniter.apply_callback_to_all_annotations()
 
 
-def update_permissions_for_annotations_in_folder(
-        gc, folderid, workflow_kwargs, recursive=True,
-        monitor='', verbose=True):
+def update_permissions_for_annotations_in_folder(gc,
+                                                 folderid,
+                                                 workflow_kwargs,
+                                                 recursive=True,
+                                                 monitor="",
+                                                 verbose=True):
     """Update permissions for all annotations in a folder recursively.
 
     Parameters
@@ -210,10 +227,11 @@ def update_permissions_for_annotations_in_folder(
 
     """
     # update permissions for each slide in folder
-    workflow_kwargs.update({'gc': gc})
+    workflow_kwargs.update({"gc": gc})
     workflow_runner = Workflow_runner(
         slide_iterator=Slide_iterator(
-            gc, source_folder_id=folderid,
+            gc,
+            source_folder_id=folderid,
             keep_slides=None,
         ),
         workflow=update_permissions_for_annotations_in_slide,
@@ -247,22 +265,26 @@ def update_styles_for_annotation(gc, annotation, changes):
 
     """
     # find out if annotation needs editing
-    if 'groups' not in annotation.keys():
+    if "groups" not in annotation.keys():
         return
-    elif not any([g in changes.keys() for g in annotation['groups']]):
+    elif not any([g in changes.keys() for g in annotation["groups"]]):
         return
 
     # edit elements one by one
-    for el in annotation['annotation']['elements']:
-        if el['group'] in changes.keys():
-            el.update(changes[el['group']])
+    for el in annotation["annotation"]["elements"]:
+        if el["group"] in changes.keys():
+            el.update(changes[el["group"]])
     # print("  updating ...")
-    return gc.put(
-        "/annotation/%s" % annotation['_id'], json=annotation['annotation'])
+    return gc.put("/annotation/%s" % annotation["_id"],
+                  json=annotation["annotation"])
 
 
-def update_styles_for_annotations_in_slide(
-        gc, slide_id, verbose=0, monitorPrefix='', callback=None, **kwargs):
+def update_styles_for_annotations_in_slide(gc,
+                                           slide_id,
+                                           verbose=0,
+                                           monitorPrefix="",
+                                           callback=None,
+                                           **kwargs):
     """Update styles for all annotations in a slide.
 
     Parameters
@@ -290,16 +312,25 @@ def update_styles_for_annotations_in_slide(
     if callback is None:
         callback = update_styles_for_annotation
     anniter = Annotation_iterator(
-        gc=gc, slide_id=slide_id,
+        gc=gc,
+        slide_id=slide_id,
         callback=callback,
         callback_kwargs=kwargs,
-        verbose=verbose, monitorPrefix=monitorPrefix)
+        verbose=verbose,
+        monitorPrefix=monitorPrefix,
+    )
     return anniter.apply_callback_to_all_annotations()
 
 
 def update_styles_for_annotations_in_folder(
-        gc, folderid, workflow_kwargs, recursive=True,
-        catch_exceptions=True, monitor='', verbose=True):
+    gc,
+    folderid,
+    workflow_kwargs,
+    recursive=True,
+    catch_exceptions=True,
+    monitor="",
+    verbose=True,
+):
     """Update styles for all annotations in a folder recursively.
 
     Parameters
@@ -325,10 +356,11 @@ def update_styles_for_annotations_in_folder(
 
     """
     # update annotation styles
-    workflow_kwargs.update({'gc': gc})
+    workflow_kwargs.update({"gc": gc})
     workflow_runner = Workflow_runner(
         slide_iterator=Slide_iterator(
-            gc, source_folder_id=folderid,
+            gc,
+            source_folder_id=folderid,
             keep_slides=None,
         ),
         workflow=update_styles_for_annotations_in_slide,
@@ -342,8 +374,13 @@ def update_styles_for_annotations_in_folder(
 
 
 def revert_annotation(
-        gc, annotation_id=None, annotation=None, version=None,
-        revert_to_nonempty_elements=False, only_revert_if_empty=True):
+    gc,
+    annotation_id=None,
+    annotation=None,
+    version=None,
+    revert_to_nonempty_elements=False,
+    only_revert_if_empty=True,
+):
     """Revert an annotation to a previous version.
 
     Parameters
@@ -372,7 +409,7 @@ def revert_annotation(
 
     """
     if annotation is not None:
-        annotation_id = annotation['_id']
+        annotation_id = annotation["_id"]
     elif annotation_id is None:
         raise Exception(
             "You must provide either the annotation or its girder id.")
@@ -395,7 +432,7 @@ def revert_annotation(
         # TODO -- This is likely a bug (?); fix me!!!
         for ver in history:
             if len(ver["groups"]) > 0:
-                version = ver['_version']
+                version = ver["_version"]
                 break
 
     ver = "" if version is None else "?version=%d" % version
@@ -408,8 +445,11 @@ def revert_annotation(
     return gc.put("/annotation/%s/history/revert%s" % (annotation_id, ver))
 
 
-def revert_annotations_in_slide(
-        gc, slide_id, verbose=0, monitorPrefix='', **kwargs):
+def revert_annotations_in_slide(gc,
+                                slide_id,
+                                verbose=0,
+                                monitorPrefix="",
+                                **kwargs):
     """Revert all annotations in a slide to a previous version.
 
     Parameters
@@ -432,16 +472,22 @@ def revert_annotations_in_slide(
 
     """
     anniter = Annotation_iterator(
-        gc=gc, slide_id=slide_id,
+        gc=gc,
+        slide_id=slide_id,
         callback=revert_annotation,
         callback_kwargs=kwargs,
-        verbose=verbose, monitorPrefix=monitorPrefix)
+        verbose=verbose,
+        monitorPrefix=monitorPrefix,
+    )
     return anniter.apply_callback_to_all_annotations()
 
 
-def revert_annotations_in_folder(
-        gc, folderid, workflow_kwargs, recursive=True,
-        monitor='', verbose=True):
+def revert_annotations_in_folder(gc,
+                                 folderid,
+                                 workflow_kwargs,
+                                 recursive=True,
+                                 monitor="",
+                                 verbose=True):
     """Revert all annotations in a folder recursively.
 
     Parameters
@@ -465,10 +511,11 @@ def revert_annotations_in_folder(
 
     """
     # update annotation styles
-    workflow_kwargs.update({'gc': gc})
+    workflow_kwargs.update({"gc": gc})
     workflow_runner = Workflow_runner(
         slide_iterator=Slide_iterator(
-            gc, source_folder_id=folderid,
+            gc,
+            source_folder_id=folderid,
             keep_slides=None,
         ),
         workflow=revert_annotations_in_slide,
@@ -479,11 +526,14 @@ def revert_annotations_in_folder(
     )
     workflow_runner.run()
 
+
 # %%===========================================================================
 
 
-def reproduce_annotations_workflow(
-        gc, folderid, annotation_jsonfile, monitorPrefix=''):
+def reproduce_annotations_workflow(gc,
+                                   folderid,
+                                   annotation_jsonfile,
+                                   monitorPrefix=""):
     """Dump annotations into single slide from local folder (Internal function).
 
     Parameters
@@ -506,16 +556,16 @@ def reproduce_annotations_workflow(
     try:
         # extract name + path
         itemname = os.path.basename(annotation_jsonfile).replace(
-            '_annotations.json', '')
+            "_annotations.json", "")
         local = os.path.dirname(annotation_jsonfile)
 
         # copy item without annotations
-        with open(os.path.join(local, itemname + '.json')) as jf:
+        with open(os.path.join(local, itemname + ".json")) as jf:
             source_item_info = json.load(jf)
         print("%s: copy item" % monitorPrefix)
         item = gc.post(
-            '/item/%s/copy?folderId=%s&name=%s&copyAnnotations=False'
-            % (source_item_info['_id'], folderid, itemname))
+            "/item/%s/copy?folderId=%s&name=%s&copyAnnotations=False" %
+            (source_item_info["_id"], folderid, itemname))
 
         # load annotations
         with open(annotation_jsonfile) as af:
@@ -525,11 +575,10 @@ def reproduce_annotations_workflow(
         n_annotations = len(annotations)
         for anno, annotation in enumerate(annotations):
             try:
-                print("%s: post annotation %d of %d" % (
-                    monitorPrefix, anno, n_annotations))
-                _ = gc.post(
-                    "/annotation?itemId=" + item['_id'],
-                    json=annotation['annotation'])
+                print("%s: post annotation %d of %d" %
+                      (monitorPrefix, anno, n_annotations))
+                _ = gc.post("/annotation?itemId=" + item["_id"],
+                            json=annotation["annotation"])
             except Exception as e:
                 print(e.__repr__())
 
@@ -563,25 +612,31 @@ def reproduce_annotations_from_backup(gc, folderid, local):
     # for each slide, copy it and post annotations
     jsonfiles = [
         os.path.join(local, j) for j in os.listdir(local)
-        if j.endswith('_annotations.json')]
+        if j.endswith("_annotations.json")
+    ]
     for jsonfile in jsonfiles:
         reproduce_annotations_workflow(
-            gc=gc, folderid=folderid, annotation_jsonfile=jsonfile,
-            monitorPrefix=monitor)
+            gc=gc,
+            folderid=folderid,
+            annotation_jsonfile=jsonfile,
+            monitorPrefix=monitor,
+        )
 
     # for each subfolder, create a new folder on HistomicsUI and call self
     subdirs = [
-        j for j in os.listdir(local) if os.path.isdir(os.path.join(local, j))]
+        j for j in os.listdir(local) if os.path.isdir(os.path.join(local, j))
+    ]
     for subdir in subdirs:
         try:
             # create folder in HistomicsUI
-            new_folder = gc.post('/folder?parentId=%s&name=%s' % (
-                folderid, subdir))
+            new_folder = gc.post("/folder?parentId=%s&name=%s" %
+                                 (folderid, subdir))
 
             # call self with same prameters
-            reproduce_annotations_from_backup(
-                gc=gc, folderid=new_folder['_id'],
-                local=os.path.join(local, subdir))
+            reproduce_annotations_from_backup(gc=gc,
+                                              folderid=new_folder["_id"],
+                                              local=os.path.join(
+                                                  local, subdir))
 
         except Exception as e:
             print(e.__repr__())

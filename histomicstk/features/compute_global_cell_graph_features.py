@@ -3,22 +3,24 @@ from collections import namedtuple
 import numpy as np
 from numpy import linalg
 from pandas import DataFrame
-from scipy.spatial import cKDTree as KDTree, Voronoi
 from scipy import sparse
 from scipy.sparse.csgraph import minimum_spanning_tree
+from scipy.spatial import Voronoi
+from scipy.spatial import cKDTree as KDTree
 from scipy.spatial.distance import pdist
 
-PopStats = namedtuple('PopStats', ['mean', 'stddev', 'min_max_ratio', 'disorder'])
-PolyProps = namedtuple('PolyProps', ['area', 'peri', 'max_dist'])
-TriProps = namedtuple('TriProps', ['sides', 'area'])
-DensityProps = namedtuple('DensityProps', ['neighbors_in_distance',
-                                           'distance_for_neighbors'])
-Props = namedtuple('Props', ['voronoi', 'delaunay', 'mst_branches', 'density'])
+PopStats = namedtuple("PopStats",
+                      ["mean", "stddev", "min_max_ratio", "disorder"])
+PolyProps = namedtuple("PolyProps", ["area", "peri", "max_dist"])
+TriProps = namedtuple("TriProps", ["sides", "area"])
+DensityProps = namedtuple("DensityProps",
+                          ["neighbors_in_distance", "distance_for_neighbors"])
+Props = namedtuple("Props", ["voronoi", "delaunay", "mst_branches", "density"])
 
 
 def compute_global_cell_graph_features(
         centroids,
-        neighbor_distances=10. * np.arange(1, 6),
+        neighbor_distances=10.0 * np.arange(1, 6),
         neighbor_counts=(3, 5, 7),
 ):
     r"""Compute global (i.e., not per-nucleus) features of the nuclei with
@@ -85,17 +87,18 @@ def compute_global_cell_graph_features(
        5th IEEE International Symposium on (pp. 496-499).  IEEE.
 
     """
-    return _flatten_to_dataframe(_compute_global_cell_graph_features(
-        centroids,
-        neighbor_distances,
-        neighbor_counts,
-    ))
+    return _flatten_to_dataframe(
+        _compute_global_cell_graph_features(
+            centroids,
+            neighbor_distances,
+            neighbor_counts,
+        ))
 
 
 def _compute_global_cell_graph_features(
-        centroids,
-        neighbor_distances,
-        neighbor_counts,
+    centroids,
+    neighbor_distances,
+    neighbor_counts,
 ):
     """Internal support for compute_global_cell_graph_features that
     returns its result in a nested nametuple structure instead of a
@@ -148,10 +151,12 @@ def _compute_global_cell_graph_features(
         r: _pop_stats(np.stack(map(len, tree.query_ball_tree(tree, r))) - 1)
         for r in neighbor_distances
     }
-    distance_for_neighbors = dict(zip(
-        neighbor_counts,
-        map(_pop_stats, tree.query(centroids, [c + 1 for c in neighbor_counts])[0].T),
-    ))
+    distance_for_neighbors = dict(
+        zip(
+            neighbor_counts,
+            map(_pop_stats,
+                tree.query(centroids, [c + 1 for c in neighbor_counts])[0].T),
+        ))
     density_props = DensityProps(neigbors_in_distance, distance_for_neighbors)
 
     return Props(poly_props, tri_props, mst_branches, density_props)
@@ -162,9 +167,8 @@ def _poly_area(vertices):
 
 
 def _poly_signed_area(vertices):
-    return .5 * linalg.det(
-        np.stack((vertices, np.roll(vertices, -1, axis=-2)), -1)
-    ).sum(-1)
+    return 0.5 * linalg.det(
+        np.stack((vertices, np.roll(vertices, -1, axis=-2)), -1)).sum(-1)
 
 
 def _poly_peri(vertices):
@@ -176,7 +180,7 @@ def _dist(x, y):
     (i),(i)->().
 
     """
-    return (np.subtract(x, y) ** 2).sum(-1) ** .5
+    return (np.subtract(x, y)**2).sum(-1)**0.5
 
 
 def _pop_stats(pop):
@@ -202,7 +206,7 @@ def _flatten_to_dataframe(nt):
     return DataFrame(_flatten_to_dict(nt), index=[0])
 
 
-def _flatten_to_dict(nt, prefix=''):
+def _flatten_to_dict(nt, prefix=""):
     result = {}
     assert isinstance(nt, (tuple, dict))
     if isinstance(nt, tuple):
@@ -217,5 +221,5 @@ def _flatten_to_dict(nt, prefix=''):
             # Terminate
             result[prefix + k] = v
         else:
-            result.update(_flatten_to_dict(v, prefix + k + '_'))
+            result.update(_flatten_to_dict(v, prefix + k + "_"))
     return result

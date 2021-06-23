@@ -1,10 +1,17 @@
-from histomicstk.utils import gradient_diffusion
 import numpy as np
 import skimage.morphology as mp
 from skimage import measure as ms
 
+from histomicstk.utils import gradient_diffusion
 
-def gvf_tracking(I, Mask, K=1000, Diffusions=10, Mu=5, Lambda=5, Iterations=10,
+
+def gvf_tracking(I,
+                 Mask,
+                 K=1000,
+                 Diffusions=10,
+                 Mu=5,
+                 Lambda=5,
+                 Iterations=10,
                  dT=0.05):
     """
     Performs gradient-field tracking to segment smoothed images of cell nuclei.
@@ -67,11 +74,10 @@ def gvf_tracking(I, Mask, K=1000, Diffusions=10, Mu=5, Lambda=5, Iterations=10,
 
     # diffusion iterations
     if Diffusions > 0:
-        dx, dy = gradient_diffusion(dx, dy, Mask, Mu, Lambda, Diffusions,
-                                    dT)
+        dx, dy = gradient_diffusion(dx, dy, Mask, Mu, Lambda, Diffusions, dT)
 
     # normalize to unit magnitude
-    Mag = ((dx**2 + dy**2)**0.5 + np.finfo(float).eps)
+    Mag = (dx**2 + dy**2)**0.5 + np.finfo(float).eps
     dy = dy / Mag
     dx = dx / Mag
 
@@ -102,25 +108,25 @@ def gvf_tracking(I, Mask, K=1000, Diffusions=10, Mu=5, Lambda=5, Iterations=10,
         Trajectory[0, 1] = y
 
         # track while angle defined by successive steps is < np.pi / 2
-        while(phi < np.pi / 2):
+        while phi < np.pi / 2:
 
             # calculate step
-            xStep = round_float(dx[Trajectory[points-1, 1],
-                                Trajectory[points-1, 0]])
-            yStep = round_float(dy[Trajectory[points-1, 1],
-                                Trajectory[points-1, 0]])
+            xStep = round_float(dx[Trajectory[points - 1, 1],
+                                   Trajectory[points - 1, 0]])
+            yStep = round_float(dy[Trajectory[points - 1, 1],
+                                   Trajectory[points - 1, 0]])
 
             # check image edge
-            if ((Trajectory[points-1, 0] + xStep < 0) or
-                    (Trajectory[points-1, 0] + xStep > N-1) or
-                    (Trajectory[points-1, 1] + yStep < 0) or
-                    (Trajectory[points-1, 1] + yStep > M-1)):
+            if ((Trajectory[points - 1, 0] + xStep < 0)
+                    or (Trajectory[points - 1, 0] + xStep > N - 1)
+                    or (Trajectory[points - 1, 1] + yStep < 0)
+                    or (Trajectory[points - 1, 1] + yStep > M - 1)):
                 break
 
             # add new point to trajectory list
             if points < K:  # buffer is not overrun
-                Trajectory[points, 0] = Trajectory[points-1, 0] + xStep
-                Trajectory[points, 1] = Trajectory[points-1, 1] + yStep
+                Trajectory[points, 0] = Trajectory[points - 1, 0] + xStep
+                Trajectory[points, 1] = Trajectory[points - 1, 1] + yStep
 
             else:  # buffer overrun
 
@@ -131,13 +137,13 @@ def gvf_tracking(I, Mask, K=1000, Diffusions=10, Mu=5, Lambda=5, Iterations=10,
 
                     # copy and reallocate
                     temp = Trajectory
-                    Trajectory = np.zeros((K*alloc, 2))
-                    Trajectory[K*(alloc-1):K*alloc, ] = temp
+                    Trajectory = np.zeros((K * alloc, 2))
+                    Trajectory[K * (alloc - 1):K * alloc, ] = temp
                     alloc += 1
 
                     # add new point
-                    Trajectory[points, 0] = Trajectory[points-1, 0] + xStep
-                    Trajectory[points, 1] = Trajectory[points-1, 1] + yStep
+                    Trajectory[points, 0] = Trajectory[points - 1, 0] + xStep
+                    Trajectory[points, 1] = Trajectory[points - 1, 1] + yStep
 
                 else:  # overflow due to cycle, terminate tracking
                     points = cycle
@@ -149,14 +155,11 @@ def gvf_tracking(I, Mask, K=1000, Diffusions=10, Mu=5, Lambda=5, Iterations=10,
             elif Mask[Trajectory[points, 1], Trajectory[points, 0]] == 0:
                 phi = np.pi
             else:
-                phi = np.arccos(dy[Trajectory[points-1, 1],
-                                   Trajectory[points-1, 0]] *
-                                dy[Trajectory[points, 1],
-                                   Trajectory[points, 0]] +
-                                dx[Trajectory[points-1, 1],
-                                   Trajectory[points-1, 0]] *
-                                dx[Trajectory[points, 1],
-                                   Trajectory[points, 0]])
+                phi = np.arccos(
+                    dy[Trajectory[points - 1, 1], Trajectory[points - 1, 0]] *
+                    dy[Trajectory[points, 1], Trajectory[points, 0]] +
+                    dx[Trajectory[points - 1, 1], Trajectory[points - 1, 0]] *
+                    dx[Trajectory[points, 1], Trajectory[points, 0]])
 
             # increment trajectory length counter
             points += 1
@@ -165,7 +168,7 @@ def gvf_tracking(I, Mask, K=1000, Diffusions=10, Mu=5, Lambda=5, Iterations=10,
         if novel == 1:
 
             # record sinks
-            Sinks.append(Trajectory[points-1, ])
+            Sinks.append(Trajectory[points - 1, ])
 
             # add trajectory to label image with new sink value, add mapping
             for j in range(points):
@@ -176,9 +179,12 @@ def gvf_tracking(I, Mask, K=1000, Diffusions=10, Mu=5, Lambda=5, Iterations=10,
 
             # add trajectory to label image with sink value of final point
             for j in range(points):
-                Segmentation[Trajectory[j, 1], Trajectory[j, 0]] = \
-                    Segmentation[Trajectory[points-1, 1],
-                                 Trajectory[points-1, 0]]
+                Segmentation[Trajectory[j, 1],
+                             Trajectory[j,
+                                        0]] = Segmentation[Trajectory[points -
+                                                                      1, 1],
+                                                           Trajectory[points -
+                                                                      1, 0]]
 
     # convert Sinks to numpy array
     Sinks = np.asarray(Sinks)
@@ -214,7 +220,7 @@ def merge_sinks(Label, Sinks, Radius=5):
     # build seed image
     SeedImage = np.zeros(Label.shape)
     for i in range(Sinks.shape[0]):
-        SeedImage[Sinks[i, 1], Sinks[i, 0]] = i+1
+        SeedImage[Sinks[i, 1], Sinks[i, 0]] = i + 1
 
     # dilate sink image
     Dilated = mp.binary_dilation(SeedImage, mp.disk(Radius))
@@ -224,7 +230,7 @@ def merge_sinks(Label, Sinks, Radius=5):
     New = Labels[Sinks[:, 1].astype(np.int), Sinks[:, 0].astype(np.int)]
 
     # get unique list of seed clusters
-    Unique = np.arange(1, New.max()+1)
+    Unique = np.arange(1, New.max() + 1)
 
     # generate new seed list
     Merged = np.zeros(Label.shape)
@@ -258,10 +264,10 @@ def detect_cycle(Trajectory, points):
     # fill in trajectory map
     Map = np.zeros((yRange, xRange))
     for i in range(points):
-        if Map[Trajectory[i, 1]-yMin, Trajectory[i, 0]-xMin] == 1:
+        if Map[Trajectory[i, 1] - yMin, Trajectory[i, 0] - xMin] == 1:
             break
         else:
-            Map[Trajectory[i, 1]-yMin, Trajectory[i, 0]-xMin] = 1
+            Map[Trajectory[i, 1] - yMin, Trajectory[i, 0] - xMin] = 1
         length += 1
 
     return length

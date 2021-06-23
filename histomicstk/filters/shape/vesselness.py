@@ -37,13 +37,13 @@ def vesselness(im_input, sigma):
     """
 
     # calculate hessian matrix
-    H = sigma ** 2 * htk_utils.hessian(im_input, sigma)
+    H = sigma**2 * htk_utils.hessian(im_input, sigma)
 
     # calculate eigenvalue image
     E, V1, V2 = htk_utils.eigen(H)
 
     # compute blobness measures
-    Deviation = E[:, :, 0]/(E[:, :, 1] + np.spacing(1))
+    Deviation = E[:, :, 0] / (E[:, :, 1] + np.spacing(1))
     Frobenius = np.sqrt(E[:, :, 0]**2 + E[:, :, 1]**2)
 
     # calculate angles for 'Theta'

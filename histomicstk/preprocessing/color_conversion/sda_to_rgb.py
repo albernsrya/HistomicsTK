@@ -31,5 +31,5 @@ def sda_to_rgb(im_sda, I_0):
     if od:  # od_to_rgb compatibility
         I_0 = 256
 
-    im_rgb = I_0 ** (1 - im_sda / 255.)
+    im_rgb = I_0**(1 - im_sda / 255.0)
     return (im_rgb.T if is_matrix else im_rgb) - od

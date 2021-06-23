@@ -1,10 +1,16 @@
 import numpy as np
-from scipy.ndimage.morphology import distance_transform_edt as dtx
 import scipy.ndimage.filters as filters
+from scipy.ndimage.morphology import distance_transform_edt as dtx
 
 
-def chan_vese(im_input, im_mask, sigma,
-              dt=1.0, mu=0.2, lambda1=1, lambda2=1, iter=100):
+def chan_vese(im_input,
+              im_mask,
+              sigma,
+              dt=1.0,
+              mu=0.2,
+              lambda1=1,
+              lambda2=1,
+              iter=100):
     """Region-based level sets.
 
     Region-based level set implementation based on the Chan-Vese method.
@@ -55,7 +61,10 @@ def chan_vese(im_input, im_mask, sigma,
     """
 
     # smoothed gradient of input image
-    im_input = filters.gaussian_filter(im_input, sigma, mode='constant', cval=0)
+    im_input = filters.gaussian_filter(im_input,
+                                       sigma,
+                                       mode="constant",
+                                       cval=0)
 
     # generate signed distance map
     im_phi = mask_to_sdf(im_mask)
@@ -66,7 +75,7 @@ def chan_vese(im_input, im_mask, sigma,
         # calculate interior and exterior averages
         C1 = np.sum(im_input[im_phi > 0]) / (np.sum(im_phi > 0) + 1e-10)
         C2 = np.sum(im_input[im_phi <= 0]) / (np.sum(im_phi <= 0) + 1e-10)
-        Force = lambda2 * (im_input - C2) ** 2 - lambda1 * (im_input - C1) ** 2
+        Force = lambda2 * (im_input - C2)**2 - lambda1 * (im_input - C1)**2
 
         # curvature of image
         Curvature = kappa(im_phi)
@@ -89,7 +98,8 @@ def kappa(im_phi):
     dPhi = np.gradient(im_phi)  # calculate gradient of level set image
     xdPhi = np.gradient(dPhi[1])
     ydPhi = np.gradient(dPhi[0])
-    K = (xdPhi[1]*(dPhi[0]**2) - 2*xdPhi[0]*dPhi[0]*dPhi[1] +
-         ydPhi[0]*(dPhi[1]**2)) / ((dPhi[0]**2 + dPhi[1]**2 + 1e-10)**(3/2))
-    K *= (xdPhi[1]**2 + ydPhi[0]**2)**(1/2)
+    K = (xdPhi[1] *
+         (dPhi[0]**2) - 2 * xdPhi[0] * dPhi[0] * dPhi[1] + ydPhi[0] *
+         (dPhi[1]**2)) / ((dPhi[0]**2 + dPhi[1]**2 + 1e-10)**(3 / 2))
+    K *= (xdPhi[1]**2 + ydPhi[0]**2)**(1 / 2)
     return K

@@ -1,9 +1,16 @@
 import numpy as np
 
 
-def graycomatrixext(im_input, im_roi_mask=None,
-                    offsets=None, num_levels=None, gray_limits=None,
-                    symmetric=False, normed=False, exclude_boundary=False):
+def graycomatrixext(
+    im_input,
+    im_roi_mask=None,
+    offsets=None,
+    num_levels=None,
+    gray_limits=None,
+    symmetric=False,
+    normed=False,
+    exclude_boundary=False,
+):
     """Computes gray-level co-occurence matrix (GLCM) within a region of
     interest (ROI) of an image. GLCM is a 2D histogram/matrix containing the
     counts/probabilities of co-occuring intensity values at a given offset
@@ -109,17 +116,17 @@ def graycomatrixext(im_input, im_roi_mask=None,
     if im_roi_mask is None:
 
         # compute glcm for whole input image
-        im_roi_mask = np.ones_like(im_input, dtype='bool')
+        im_roi_mask = np.ones_like(im_input, dtype="bool")
 
     if im_input.shape != im_roi_mask.shape:
-        raise ValueError('size mismatch between input image and roi mask')
+        raise ValueError("size mismatch between input image and roi mask")
 
     # gray_limits
     if gray_limits is None:
 
         gray_limits = _default_gray_limits(im_input)
 
-    assert(len(gray_limits) == 2 and gray_limits[0] < gray_limits[1])
+    assert len(gray_limits) == 2 and gray_limits[0] < gray_limits[1]
 
     # num_levels
     if num_levels is None:
@@ -137,17 +144,16 @@ def graycomatrixext(im_input, im_roi_mask=None,
         # check sanity
         if offsets.shape[1] != num_dims:
             raise ValueError(
-                'Dimension mismatch between input image and offsets'
-            )
+                "Dimension mismatch between input image and offsets")
 
     num_offsets = offsets.shape[0]
 
     # scale input intensity image
-    im_input = im_input.astype('float')
+    im_input = im_input.astype("float")
     im_input -= gray_limits[0]
     im_input /= np.float(gray_limits[1] - gray_limits[0])
-    im_input *= (num_levels - 1)
-    im_input = np.round(im_input).astype('int')
+    im_input *= num_levels - 1
+    im_input = np.round(im_input).astype("int")
 
     # compute glcm for each offset
     glcm = np.zeros((num_levels, num_levels, num_offsets))
@@ -169,7 +175,7 @@ def graycomatrixext(im_input, im_roi_mask=None,
             neigh_coord_ind[j] = roi_coord_ind[j] + offsets[i, j]
 
         # throw out pixels with invalid neighbors
-        neigh_valid = np.ones_like(neigh_coord_ind[0], dtype='bool')
+        neigh_valid = np.ones_like(neigh_coord_ind[0], dtype="bool")
 
         for j in range(num_dims):
 
@@ -177,7 +183,8 @@ def graycomatrixext(im_input, im_roi_mask=None,
             neigh_valid[neigh_coord_ind[j] >= im_roi_mask.shape[j]] = False
 
         for j in range(num_dims):
-            neigh_coord_ind[j] = np.compress(neigh_valid, neigh_coord_ind[j],
+            neigh_coord_ind[j] = np.compress(neigh_valid,
+                                             neigh_coord_ind[j],
                                              axis=0).astype(np.int64)
 
         neigh_lin_ind = np.ravel_multi_index(neigh_coord_ind,
@@ -219,7 +226,7 @@ def graycomatrixext(im_input, im_roi_mask=None,
 
 def _default_gray_limits(im_input):
 
-    assert(isinstance(im_input, np.ndarray))
+    assert isinstance(im_input, np.ndarray)
 
     if np.issubdtype(im_input.dtype, np.bool_):
 
@@ -235,14 +242,14 @@ def _default_gray_limits(im_input):
 
     else:
 
-        raise ValueError('The type of the argument im_input is invalid')
+        raise ValueError("The type of the argument im_input is invalid")
 
     return gray_limits
 
 
 def _default_num_levels(im_input):
 
-    assert(isinstance(im_input, np.ndarray))
+    assert isinstance(im_input, np.ndarray)
 
     if np.issubdtype(im_input.dtype, np.bool_):
 
@@ -254,7 +261,7 @@ def _default_num_levels(im_input):
 
     else:
 
-        raise ValueError('The type of the argument im_input is invalid')
+        raise ValueError("The type of the argument im_input is invalid")
 
     return num_levels
 
@@ -265,9 +272,7 @@ def _default_offsets(im_input):
 
     if num_dims == 2:
 
-        offsets = np.array([
-            [0, 1], [1, 0], [1, 1], [1, -1]
-        ])
+        offsets = np.array([[0, 1], [1, 0], [1, 1], [1, -1]])
 
     else:
 
